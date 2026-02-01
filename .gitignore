@@ -8,3 +8,6 @@ __pycache__/
 
 # OS
 .DS_Store
+
+# Python virtual environment
+.chappie_bots/
