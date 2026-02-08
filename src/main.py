@@ -1,5 +1,4 @@
-def main():
-    print("Trading bot started")
+from strategies.ema_cross.runner import run
 
 if __name__ == "__main__":
-    main()
+    run()

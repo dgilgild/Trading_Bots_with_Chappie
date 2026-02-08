@@ -1,2 +1,7 @@
 python-dotenv
 requests
+pandas
+numpy
+python-dotenv
+ccxt
+matplotlib

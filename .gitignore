@@ -1,13 +1,23 @@
 # Python
-.venv/
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+*.log
 
-# Env
-.env
-
-# OS
-.DS_Store
-
-# Python virtual environment
+# Virtualenv
+.venv/
+venv/
 .chappie_bots/
+
+# SQLite DB
+*.db
+*.sqlite3
+
+# Reports / outputs
+data/reports/
+web/static/charts/
+
+# Secrets
+.env
+.env.*

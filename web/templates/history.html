@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<h2>Backtest History</h2>
+
+<table border="1" cellpadding="5">
+    <tr>
+        <th>ID</th>
+        <th>Strategy</th>
+        <th>Exchange</th>
+        <th>Symbol</th>
+        <th>Timeframe</th>
+        <th>Date</th>
+        <th>Link</th>
+    </tr>
+
+    {% for r in runs %}
+    <tr>
+        <td>{{ r["id"] }}</td>
+        <td>{{ r["strategy"] }}</td>
+        <td>{{ r["exchange"] }}</td>
+        <td>{{ r["symbol"] }}</td>
+        <td>{{ r["timeframe"] }}</td>
+        <td>{{ r["created_at"] }}</td>
+        <td><a href="/results/{{ r['id'] }}">View</a></td>
+    </tr>
+    {% endfor %}
+</table>
+
+{% endblock %}

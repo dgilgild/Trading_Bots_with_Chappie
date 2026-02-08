@@ -1,0 +1,45 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<h2>Run Backtest</h2>
+
+<form action="/run_backtest" method="POST">
+
+    <label>Strategy:</label>
+    <select name="strategy">
+        <option value="ema_cross">ema_cross</option>
+    </select>
+    <br><br>
+
+    <label>Exchange:</label>
+    <input type="text" name="exchange" value="binance">
+    <br><br>
+
+    <label>Symbol:</label>
+    <input type="text" name="symbol" value="BTC/USDT">
+    <br><br>
+
+    <label>Timeframe:</label>
+    <input type="text" name="timeframe" value="15m">
+    <br><br>
+
+    <label>EMA Fast:</label>
+    <input type="number" name="ema_fast" value="12">
+    <br><br>
+
+    <label>EMA Slow:</label>
+    <input type="number" name="ema_slow" value="26">
+    <br><br>
+
+    <label>Start Date (YYYY-MM-DD):</label>
+    <input type="text" name="start_date" value="2018-01-01">
+    <br><br>
+
+    <label>End Date (YYYY-MM-DD):</label>
+    <input type="text" name="end_date" value="">
+    <br><br>
+
+    <button type="submit">Run Backtest</button>
+</form>
+
+{% endblock %}
