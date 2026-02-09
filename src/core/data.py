@@ -10,7 +10,7 @@ def date_to_ms(date_str):
     return int(dt.timestamp() * 1000)
 
 
-def fetch_ohlcv(symbol, timeframe, start_date=None, end_date=None, limit=50000, use_clean=True):
+def fetch_ohlcv(exchange,symbol, timeframe, start_date=None, end_date=None, limit=50000, use_clean=True):
     table = "ohlcv_clean" if use_clean else "ohlcv"
 
     conn = get_connection()

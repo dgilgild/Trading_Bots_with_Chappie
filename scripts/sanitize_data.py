@@ -1,7 +1,7 @@
 import os
 import sqlite3
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timezone
 
 DB_PATH = "data/market_data.db"
 
@@ -34,7 +34,8 @@ def sanitize_data(exchange="binance", symbol="BTC/USDT", timeframe="15m"):
     report_lines.append(f"Exchange  : {exchange}")
     report_lines.append(f"Symbol    : {symbol}")
     report_lines.append(f"Timeframe : {timeframe}")
-    report_lines.append(f"Run Time  : {datetime.utcnow().isoformat()} UTC")
+    report_lines.append(f"Generated at: {datetime.now(timezone.utc).isoformat()}")
+
     report_lines.append("")
 
     conn = sqlite3.connect(DB_PATH)
@@ -176,8 +177,8 @@ def sanitize_data(exchange="binance", symbol="BTC/USDT", timeframe="15m"):
         report_lines.append("")
         report_lines.append("Gap details:")
         for gap_start, gap_end, missing in gaps_summary[:30]:
-            start_str = datetime.utcfromtimestamp(gap_start / 1000).isoformat()
-            end_str = datetime.utcfromtimestamp(gap_end / 1000).isoformat()
+            start_str = datetime.fromtimestamp(gap_start / 1000, timezone.utc).isoformat()
+            end_str   = datetime.fromtimestamp(gap_end   / 1000, timezone.utc).isoformat()
             report_lines.append(f"  Gap from {start_str} -> {end_str} | Missing candles: {missing}")
 
         if len(gaps_summary) > 30:
@@ -207,10 +208,14 @@ def sanitize_data(exchange="binance", symbol="BTC/USDT", timeframe="15m"):
     start_ts = df["timestamp"].min()
     end_ts = df["timestamp"].max()
 
+    start_dt = datetime.fromtimestamp(start_ts / 1000, timezone.utc)
+    end_dt   = datetime.fromtimestamp(end_ts   / 1000, timezone.utc)
+
     report_lines.append("")
     report_lines.append("Dataset time range:")
-    report_lines.append(f"Start: {datetime.utcfromtimestamp(start_ts/1000).isoformat()} UTC")
-    report_lines.append(f"End  : {datetime.utcfromtimestamp(end_ts/1000).isoformat()} UTC")
+
+    report_lines.append(f"Start: {start_dt.isoformat()}")
+    report_lines.append(f"End  : {end_dt.isoformat()}")
 
     # -----------------------------
     # Save clean data to DB table
@@ -245,10 +250,13 @@ def sanitize_data(exchange="binance", symbol="BTC/USDT", timeframe="15m"):
     conn.commit()
     conn.close()
 
+
     # -----------------------------
     # Write report to TXT
     # -----------------------------
-    now_str = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    now_utc = datetime.now(timezone.utc)
+    now_str = now_utc.strftime("%Y%m%d_%H%M%S")
+
     safe_symbol = symbol.replace("/", "_")
 
     report_path = os.path.join(
@@ -260,6 +268,7 @@ def sanitize_data(exchange="binance", symbol="BTC/USDT", timeframe="15m"):
         f.write("\n".join(report_lines))
 
     print(f"[OK] Sanitization finished. Report saved to: {report_path}")
+
 
 
 if __name__ == "__main__":

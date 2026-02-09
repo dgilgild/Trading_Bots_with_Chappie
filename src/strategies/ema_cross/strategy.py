@@ -9,9 +9,10 @@ def check_signal(df, fast, slow):
     last = df.iloc[-1]
 
     if prev.ema_fast < prev.ema_slow and last.ema_fast > last.ema_slow:
-        return "LONG"
+        return "LONG", f"EMA{fast} crossed ABOVE EMA{slow}"
 
     if prev.ema_fast > prev.ema_slow and last.ema_fast < last.ema_slow:
-        return "EXIT"
+        return "EXIT", f"EMA{fast} crossed BELOW EMA{slow}"
 
-    return None
+    return None, None
+

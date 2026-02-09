@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 import json
 from datetime import datetime, timezone
 
@@ -20,6 +20,7 @@ def run_backtest():
     exchange = request.form.get("exchange")
     symbol = request.form.get("symbol")
     timeframe = request.form.get("timeframe")
+    use_clean = request.form.get("use_clean") == "1"
 
     ema_fast = int(request.form.get("ema_fast"))
     ema_slow = int(request.form.get("ema_slow"))
@@ -29,10 +30,11 @@ def run_backtest():
 
     params = {
         "ema_fast": ema_fast,
-        "ema_slow": ema_slow
+        "ema_slow": ema_slow,
+        "use_clean": use_clean
     }
 
-    stats, chart_path = run_backtest_ema_cross(
+    stats, chart_path, csv_path = run_backtest_ema_cross(
         exchange=exchange,
         symbol=symbol,
         timeframe=timeframe,
@@ -41,6 +43,13 @@ def run_backtest():
         ema_fast=ema_fast,
         ema_slow=ema_slow
     )
+
+    return jsonify({
+        "stats": stats,
+        "chart_path": chart_path,
+        "csv_path": csv_path
+    })
+
 
     created_at = datetime.now(timezone.utc).isoformat()
 
