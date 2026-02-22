@@ -47,6 +47,7 @@ def init_db():
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS backtest_runs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            run_id TEXT UNIQUE NOT NULL,
             strategy TEXT NOT NULL,
             exchange TEXT NOT NULL,
             symbol TEXT NOT NULL,
@@ -56,6 +57,7 @@ def init_db():
             params_json TEXT NOT NULL,
             stats_json TEXT NOT NULL,
             chart_path TEXT,
+            csv_path TEXT,
             created_at TEXT NOT NULL
         );
     """)

@@ -3,8 +3,7 @@
 {% block content %}
 <h2>Run Backtest</h2>
 
-<form action="/run_backtest" method="POST">
-
+<form id="backtest-form" action="/run_backtest" method="POST">
     <label>Strategy:</label>
     <select name="strategy">
         <option value="ema_cross">ema_cross</option>
@@ -25,8 +24,8 @@
 
     <label>Data Source:</label>
     <select name="use_clean">
-    <option value="1" selected>ohlcv_clean (sanitized)</option>
-    <option value="0">ohlcv (raw)</option>
+        <option value="1" selected>ohlcv_clean (sanitized)</option>
+        <option value="0">ohlcv (raw)</option>
     </select>
     <br><br>
 
@@ -46,7 +45,44 @@
     <input type="text" name="end_date" value="">
     <br><br>
 
+    <h2>Charts</h2>
+
+    <label>Chart type:</label>
+    <select name="chart_type">
+        <option value="equity">Equity Curve</option>
+        <option value="trades">Trades Overlay</option>
+    </select>
+
+    <br><br>
+
+    <label>Time mode:</label>
+    <select name="time_mode">
+        <option value="full">Full range</option>
+        <option value="monthly">Monthly</option>
+        <option value="range">Custom range</option>
+    </select>
+
+    <br><br>
+
+    <label>Indicators:</label><br>
+    <input type="checkbox" name="show_ema_fast" checked> EMA Fast<br>
+    <input type="checkbox" name="show_ema_slow" checked> EMA Slow
+
+    <br><br>
     <button type="submit">Run Backtest</button>
 </form>
+
+<h2>Results</h2>
+<div id="results" aria-live="polite"></div>
+
+<p>
+  <a href="{{ url_for('view_charts', strategy='ema_cross') }}">
+    View generated charts for this strategy
+  </a>
+</p>
+
+
+<!-- If /js/backtest.js auto-submits or navigates, remove or adjust it to avoid conflicts -->
+<!-- <script src="/js/backtest.js"></script> -->
 
 {% endblock %}

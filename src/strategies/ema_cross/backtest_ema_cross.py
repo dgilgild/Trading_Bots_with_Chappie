@@ -1,8 +1,10 @@
 import os
-from datetime import datetime, timezone
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 import pandas as pd
 
+from datetime import datetime, timezone
+from flask import current_app
 from src.core.data import fetch_ohlcv
 from src.core.backtester import Backtester
 from src.strategies.ema_cross.strategy import check_signal
@@ -11,7 +13,7 @@ from src.core.plotting.plot_trades import plot_trades
 
 
 
-def export_trades_csv(trades, prefix="ema_cross"):
+def export_trades_csv(trades, output_dir, run_id, prefix="ema_cross"):
     if not trades:
         print("[WARN] No trades to export")
         return None
@@ -27,11 +29,8 @@ def export_trades_csv(trades, prefix="ema_cross"):
 
     df["result"] = df["net_pnl"].apply(lambda x: "WIN" if x > 0 else "LOSS")
 
-    export_dir = os.path.join("data", "reports", "trades")
-    os.makedirs(export_dir, exist_ok=True)
-
-    filename = f"{prefix}_trades_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.csv"
-    path = os.path.join(export_dir, filename)
+    filename = f"{run_id}_trades.csv"
+    path = os.path.join(output_dir, filename)
 
     df = df[
         [
@@ -50,8 +49,10 @@ def export_trades_csv(trades, prefix="ema_cross"):
     ]
 
     df.to_csv(path, index=False)
-    return path
 
+    DB_csv_path = f"backtests/ema_cross/{run_id}/{filename}"
+
+    return path, DB_csv_path
 
 
 def run_backtest_ema_cross(
@@ -63,7 +64,22 @@ def run_backtest_ema_cross(
     ema_fast,
     ema_slow,
     use_clean=True,
+    run_id=None
 ):
+
+    # 0)  Crear carpeta del run
+    output_dir = os.path.join(
+        current_app.root_path,
+        "static",
+        "backtests",
+        "ema_cross",
+        run_id
+    )
+
+    os.makedirs(output_dir, exist_ok=True)
+    print("0.- BACKTEST RUN ID:", run_id)
+    print("0.- OUTPUT DIR:", output_dir)
+
 
     # 1) Data
     df = fetch_ohlcv(
@@ -100,27 +116,39 @@ def run_backtest_ema_cross(
         for k, v in stats.items()
     }
 
-    # 5) Equity curve
-    equity = [bt.initial_capital]
+    # 5) Equity curve (date based)
+
+    equity = []
+    equity_dates = []
+    current_equity = bt.initial_capital
+
     for t in bt.trades:
-        equity.append(equity[-1] + t["net_pnl"])
+        current_equity += t["net_pnl"]
+        equity.append(current_equity)
+        equity_dates.append(t["exit_time"])
 
-    output_dir = "web/static/charts/ema_cross"
-    os.makedirs(output_dir, exist_ok=True)
+    equity_filename = f"equity_curve_{run_id}.png"
+    equity_path = os.path.join(output_dir, equity_filename)
 
-    filename = f"ema_cross_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.png"
-    file_path = os.path.join(output_dir, filename)
+    print("5.- equity_filename:", equity_filename)
+    print("5.- equity_path:", equity_path)
 
     plt.figure(figsize=(10, 5))
-    plt.plot(equity)
+    plt.plot(equity_dates, equity)
     plt.title("Equity Curve - EMA Cross")
-    plt.xlabel("Trade #")
+    plt.xlabel("Date")
     plt.ylabel("Equity ($)")
     plt.grid(True)
-    plt.savefig(file_path)
+    plt.gca().xaxis.set_major_locator(mdates.AutoDateLocator())
+    plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.savefig(equity_path)
     plt.close()
 
-    web_path = f"/static/charts/ema_cross/{filename}"
+    DB_equity_path = f"backtests/ema_cross/{run_id}/{equity_filename}"
+
+    #web_path = f"/static/charts/ema_cross/{filename}"
 
     # 6) Plot trades x fecha
     #from src.visualization.plot_trades import plot_trades_by_date
@@ -151,16 +179,25 @@ def run_backtest_ema_cross(
 
     # 8) CSV trades
 
-    print("TOTAL TRADES:", len(bt.trades))
+    print("8.- TOTAL TRADES:", len(bt.trades))
     if bt.trades:
-        print("TRADE KEYS:", bt.trades[0].keys())
+        print("8.- TRADE KEYS:", bt.trades[0].keys())
 
     df = pd.DataFrame(bt.trades)
-    print("DF COLUMNS:", df.columns.tolist())
 
-    csv_path = export_trades_csv(bt.trades)
+    csv_path, DB_csv_path = export_trades_csv(bt.trades, output_dir, run_id)
 
-    return clean_stats, web_path, csv_path
+    print("8.- CSV trades equity filename:", equity_filename)
+    print("8.- CSV Path:", csv_path)
+
+    return clean_stats, DB_equity_path, DB_csv_path
+
+
+
+    if return_raw:
+        return clean_stats, equity_chart_path, csv_path, df, bt.trades
+
+    return clean_stats, equity_chart_path, csv_path
 
 
 if __name__ == "__main__":

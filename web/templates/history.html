@@ -15,16 +15,21 @@
     </tr>
 
     {% for r in runs %}
-    <tr>
-        <td>{{ r["id"] }}</td>
-        <td>{{ r["strategy"] }}</td>
-        <td>{{ r["exchange"] }}</td>
-        <td>{{ r["symbol"] }}</td>
-        <td>{{ r["timeframe"] }}</td>
-        <td>{{ r["created_at"] }}</td>
-        <td><a href="/results/{{ r['id'] }}">View</a></td>
-    </tr>
-    {% endfor %}
+{% for run in runs %}
+<tr>
+  <td>{{ run.run_id }}</td>
+  <td>{{ run.strategy }}</td>
+  <td>{{ run.exchange }}</td>
+  <td>{{ run.symbol }}</td>
+  <td>{{ run.timeframe }}</td>
+  <td>{{ run.created_at }}</td>
+  <td>
+    <a href="{{ url_for('results', run_id=run.run_id) }}">
+      View Results
+    </a>
+  </td>
+</tr>
+{% endfor %}    {% endfor %}
 </table>
 
 {% endblock %}

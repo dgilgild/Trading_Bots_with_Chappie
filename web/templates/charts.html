@@ -1,0 +1,16 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<h2>Charts for strategy: {{ strategy }}</h2>
+
+{% if images %}
+    {% for img in images %}
+        <div style="margin-bottom: 40px;">
+            <img src="{{ url_for('static', filename=img) }}" style="max-width:100%;">
+        </div>
+    {% endfor %}
+{% else %}
+    <p>No charts found.</p>
+{% endif %}
+
+{% endblock %}

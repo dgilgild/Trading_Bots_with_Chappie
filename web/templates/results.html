@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<h2>Backtest Results (Run ID: {{ run["id"] }})</h2>
+<h2>Backtest Results (Run ID: {{ run["run_id"] }})</h2>
 
 <h3>Params</h3>
 <pre>{{ params | tojson(indent=2) }}</pre>
@@ -12,7 +12,17 @@
 {% if run["chart_path"] %}
 <h3>Chart</h3>
 
-<img src="{{ run['chart_path'] }}" style="max-width:900px;">
+<img src="{{ url_for('static', filename=run['chart_path']) }}"
+     style="max-width:900px;">
 {% endif %}
+
+{% if run["csv_path"] %}
+<h3>Trades CSV</h3>
+
+<a href="{{ url_for('static', filename=run['csv_path']) }}" download>
+    Download Trades CSV
+</a>
+{% endif %}
+
 
 {% endblock %}
