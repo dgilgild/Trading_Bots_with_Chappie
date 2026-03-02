@@ -3,19 +3,18 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import pandas as pd
 
-from datetime import datetime, timezone
 from flask import current_app
 from src.core.data import fetch_ohlcv
-from src.core.backtester import Backtester
+from src.core.backtester_v2 import BacktesterV2
 from src.strategies.ema_cross.strategy import check_signal
 from src.visualization.plot_trades import plot_trades_by_date
 from src.core.plotting.plot_trades import plot_trades
 
 
-def export_trades_csv(trades, output_dir, run_id, prefix="ema_cross"):
+def export_trades_csv(trades, output_dir, run_id, prefix="ema_cross_v2"):
     if not trades:
         print("[WARN] No trades to export")
-        return None
+        return None, None
 
     df = pd.DataFrame(trades)
 
@@ -38,6 +37,9 @@ def export_trades_csv(trades, output_dir, run_id, prefix="ema_cross"):
             "side",
             "entry_price",
             "exit_price",
+            "position_size",
+            "gross_pnl",
+            "commission_paid",
             "pnl_pct",
             "net_pnl",
             "result",
@@ -54,7 +56,7 @@ def export_trades_csv(trades, output_dir, run_id, prefix="ema_cross"):
     return path, DB_csv_path
 
 
-def run_backtest_ema_cross(
+def run_backtest_ema_cross_v2(
     exchange,
     symbol,
     timeframe,
@@ -63,12 +65,21 @@ def run_backtest_ema_cross(
     ema_fast,
     ema_slow,
     use_clean=True,
-    run_id=None
+    run_id=None,
+    initial_balance=1000,
+    position_mode="all_in",
+    trade_size=100,
+    commission_pct=0.001,
+    slippage_pct=0.01,
+    allow_short=False,
+    base_path=None,
 ):
 
-    # 0)  Crear carpeta del run
+    # --------------------------------------------------
+    # 0) Crear carpeta
+    # --------------------------------------------------
     output_dir = os.path.join(
-        current_app.root_path,
+        base_path,
         "static",
         "backtests",
         "ema_cross",
@@ -76,11 +87,13 @@ def run_backtest_ema_cross(
     )
 
     os.makedirs(output_dir, exist_ok=True)
-    print("0.- BACKTEST RUN ID:", run_id)
-    print("0.- OUTPUT DIR:", output_dir)
 
+    print("BACKTEST V2 RUN ID:", run_id)
+    print("OUTPUT DIR:", output_dir)
 
+    # --------------------------------------------------
     # 1) Data
+    # --------------------------------------------------
     df = fetch_ohlcv(
         exchange=exchange,
         symbol=symbol,
@@ -91,32 +104,62 @@ def run_backtest_ema_cross(
         use_clean=use_clean,
     )
 
-    # 2) Backtester
-    bt = Backtester(initial_capital=1000)
-
     df["ema_fast"] = df["close"].ewm(span=ema_fast, adjust=False).mean()
     df["ema_slow"] = df["close"].ewm(span=ema_slow, adjust=False).mean()
 
+    # --------------------------------------------------
+    # 2) Backtester V2
+    # --------------------------------------------------
+    bt = BacktesterV2(
+        initial_capital=initial_balance,
+        position_mode=position_mode,
+        trade_size=trade_size,
+        commission_pct=commission_pct,
+        slippage_pct=slippage_pct,
+        allow_short=allow_short,
+    )
+
+    # --------------------------------------------------
     # 3) Loop vela a vela
+    # --------------------------------------------------
     for i in range(ema_slow + 1, len(df)):
+
         slice_df = df.iloc[:i].copy()
 
+        current_bar = df.iloc[i]
+
+        high = current_bar["high"]
+        low = current_bar["low"]
+        price = current_bar["close"]
+        timestamp = current_bar["timestamp"]
+
+        # 1️⃣ Primero chequeamos stop intrabar
+        bt.on_bar(
+            high=high,
+            low=low,
+            timestamp=timestamp,
+            bar_index=i
+        )
+
+        # 2️⃣ Después calculamos señal EMA
         signal, trigger = check_signal(slice_df, ema_fast, ema_slow)
 
-        price = slice_df.iloc[-1]["close"]
-        timestamp = slice_df.iloc[-1]["timestamp"]
+        # 3️⃣ Ejecutamos señal
+        bt.on_signal(signal, price, timestamp, trigger, i)
 
-        bt.on_signal(signal, price, timestamp, trigger,i)
-
+   
+    # --------------------------------------------------
     # 4) Stats
+    # --------------------------------------------------
     stats = bt.stats()
     clean_stats = {
         k: v.item() if hasattr(v, "item") else v
         for k, v in stats.items()
     }
 
-    # 5) Equity curve (date based)
-
+    # --------------------------------------------------
+    # 5) Equity Curve (compatible)
+    # --------------------------------------------------
     equity = []
     equity_dates = []
     current_equity = bt.initial_capital
@@ -129,12 +172,9 @@ def run_backtest_ema_cross(
     equity_filename = f"equity_curve_{run_id}.png"
     equity_path = os.path.join(output_dir, equity_filename)
 
-    print("5.- equity_filename:", equity_filename)
-    print("5.- equity_path:", equity_path)
-
     plt.figure(figsize=(10, 5))
     plt.plot(equity_dates, equity)
-    plt.title("Equity Curve - EMA Cross")
+    plt.title("Equity Curve - EMA Cross V2")
     plt.xlabel("Date")
     plt.ylabel("Equity ($)")
     plt.grid(True)
@@ -147,23 +187,20 @@ def run_backtest_ema_cross(
 
     DB_equity_path = f"backtests/ema_cross/{run_id}/{equity_filename}"
 
-    #web_path = f"/static/charts/ema_cross/{filename}"
-
-    # 6) Plot trades x fecha
-    #from src.visualization.plot_trades import plot_trades_by_date
-
+    # --------------------------------------------------
+    # 6) Plot Trades
+    # --------------------------------------------------
     plot_trades_by_date(
         df=df,
         trades=bt.trades,
-        start_date="2018-01-01",
-        end_date="2018-02-01",
-        title="EMA Cross – BTC/USDT"
+        start_date=start_date,
+        end_date=end_date,
+        title="EMA Cross V2"
     )
- 
-    # 7) 
+
     indicators = {
-        f"EMA {ema_fast}": df["close"].ewm(span=ema_fast, adjust=False).mean(),
-        f"EMA {ema_slow}": df["close"].ewm(span=ema_slow, adjust=False).mean(),
+        f"EMA {ema_fast}": df["ema_fast"],
+        f"EMA {ema_slow}": df["ema_slow"],
     }
 
     trades_chart_path = plot_trades(
@@ -172,44 +209,16 @@ def run_backtest_ema_cross(
         indicators=indicators,
         start_date=start_date,
         end_date=end_date,
-        title="EMA Cross – Trades"
+        title="EMA Cross – Trades V2"
     )
 
-
-    # 8) CSV trades
-
-    print("8.- TOTAL TRADES:", len(bt.trades))
-    if bt.trades:
-        print("8.- TRADE KEYS:", bt.trades[0].keys())
-
-    df = pd.DataFrame(bt.trades)
-
-    csv_path, DB_csv_path = export_trades_csv(bt.trades, output_dir, run_id)
-
-    print("8.- CSV trades equity filename:", equity_filename)
-    print("8.- CSV Path:", csv_path)
+    # --------------------------------------------------
+    # 7) CSV
+    # --------------------------------------------------
+    csv_path, DB_csv_path = export_trades_csv(
+        bt.trades,
+        output_dir,
+        run_id
+    )
 
     return clean_stats, DB_equity_path, DB_csv_path
-
-
-
-    if return_raw:
-        return clean_stats, equity_chart_path, csv_path, df, bt.trades
-
-    return clean_stats, equity_chart_path, csv_path
-
-
-if __name__ == "__main__":
-    stats, chart_path, csv_path = run_backtest_ema_cross(
-        exchange="binance",
-        symbol="BTC/USDT",
-        timeframe="15m",
-        start_date="2018-01-01",
-        end_date=None,
-        ema_fast=20,
-        ema_slow=50,
-    )
-
-    print(stats)
-    print("Chart:", chart_path)
-    print("CSV:", csv_path)

@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime, timezone
 from flask import Flask, render_template, request, redirect, url_for, jsonify, current_app
 from src.core.database import get_connection, init_db
-from src.strategies.ema_cross.backtest_ema_cross import run_backtest_ema_cross
+from src.strategies.ema_cross.backtest_ema_cross_v2 import run_backtest_ema_cross_v2
 
 app = Flask(__name__,template_folder="templates",static_folder="static")
 init_db()
@@ -43,7 +43,7 @@ def run_backtest():
     run_id = f"{timestamp}_{unique_id}"
 
     #2) Ejecutar backtest
-    stats, chart_path, csv_path = run_backtest_ema_cross(
+    stats, chart_path, csv_path = run_backtest_ema_cross_v2(
         exchange=exchange,
         symbol=symbol,
         timeframe=timeframe,
@@ -51,7 +51,8 @@ def run_backtest():
         end_date=end_date,
         ema_fast=ema_fast,
         ema_slow=ema_slow,
-        run_id=run_id
+        run_id=run_id,
+        base_path=current_app.root_path
     )
 
     #3) guardad en DB

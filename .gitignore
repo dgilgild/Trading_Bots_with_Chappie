@@ -17,6 +17,7 @@ venv/
 # Reports / outputs
 data/reports/
 web/static/charts/
+web/static/backtests/
 
 # Secrets
 .env
