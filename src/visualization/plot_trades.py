@@ -7,7 +7,8 @@ def plot_trades_by_date(
     trades,
     start_date,
     end_date,
-    title="EMA Cross Trades"
+    title="EMA Cross Trades",
+    show_plot=True,
 ):
     # -----------------------------
     # Datetime handling (TU CASO)
@@ -106,4 +107,7 @@ def plot_trades_by_date(
     plt.grid(alpha=0.3)
     plt.legend()
     plt.tight_layout()
-    plt.show()
+    if show_plot:
+        plt.show()
+    else:
+        plt.close()

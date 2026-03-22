@@ -6,12 +6,14 @@ import pandas as pd
 from flask import current_app
 from src.core.data import fetch_ohlcv
 from src.core.backtester_v2 import BacktesterV2
+from src.core.reporting import generate_quantstats_report
+from src.core.ta import compute_adx, compute_atr
 from src.strategies.ema_cross.strategy import check_signal
 from src.visualization.plot_trades import plot_trades_by_date
 from src.core.plotting.plot_trades import plot_trades
 
 
-def export_trades_csv(trades, output_dir, run_id, prefix="ema_cross_v2"):
+def export_trades_csv(trades, output_dir, run_id, metadata, prefix="ema_cross_v2"):
     if not trades:
         print("[WARN] No trades to export")
         return None, None
@@ -25,27 +27,59 @@ def export_trades_csv(trades, output_dir, run_id, prefix="ema_cross_v2"):
         (df["exit_price"] - df["entry_price"]) / df["entry_price"] * 100
     ).round(3)
 
+    df["net_return_pct"] = (
+        (df["net_pnl"] / df["position_size"]) * 100
+    ).round(3)
+
+    df["duration_minutes"] = (
+        (df["exit_time"] - df["entry_time"]).dt.total_seconds() / 60
+    ).round(2)
+
     df["result"] = df["net_pnl"].apply(lambda x: "WIN" if x > 0 else "LOSS")
+
+    df["balance"] = df["cash_after_trade"].round(6)
+
+    for key, value in metadata.items():
+        df[key] = value
 
     filename = f"{run_id}_trades.csv"
     path = os.path.join(output_dir, filename)
 
     df = df[
         [
+            "run_id",
+            "exchange",
+            "symbol",
+            "timeframe",
+            "ema_fast",
+            "ema_slow",
+            "side",
+            "result",
+            "position_size",
+            "qty",
+            "pyramid_level",
+            "balance",
+            "cash_after_trade",
             "entry_time",
             "exit_time",
-            "side",
             "entry_price",
             "exit_price",
-            "position_size",
+            "stop_price",
+            "take_profit_price",
+            "commission_pct",
+            "slippage_pct",
+            "stop_loss_pct",
+            "take_profit_pct",
             "gross_pnl",
             "commission_paid",
             "pnl_pct",
+            "net_return_pct",
             "net_pnl",
-            "result",
             "entry_trigger",
             "exit_trigger",
             "bars_in_trade",
+            "use_clean",
+            "position_mode",
         ]
     ]
 
@@ -66,12 +100,24 @@ def run_backtest_ema_cross_v2(
     ema_slow,
     use_clean=True,
     run_id=None,
-    initial_balance=1000,
+    initial_balance=1000.0,
     position_mode="all_in",
-    trade_size=100,
+    trade_size=100.0,
     commission_pct=0.001,
     slippage_pct=0.01,
-    allow_short=False,
+    allow_short=True,
+    stop_loss_pct=0.02,
+    take_profit_pct=None,
+    atr_period=None,
+    atr_sl_mult=None,
+    atr_tp_mult=None,
+    adx_period=None,
+    adx_threshold=None,
+    generate_report=True,
+    pyramiding=1,
+    position_pct=None,
+    generate_plots=True,
+    generate_equity=True,
     base_path=None,
 ):
 
@@ -107,6 +153,9 @@ def run_backtest_ema_cross_v2(
     df["ema_fast"] = df["close"].ewm(span=ema_fast, adjust=False).mean()
     df["ema_slow"] = df["close"].ewm(span=ema_slow, adjust=False).mean()
 
+    atr_series = compute_atr(df, atr_period) if atr_period else None
+    adx_series = compute_adx(df, adx_period) if adx_period else None
+
     # --------------------------------------------------
     # 2) Backtester V2
     # --------------------------------------------------
@@ -117,6 +166,12 @@ def run_backtest_ema_cross_v2(
         commission_pct=commission_pct,
         slippage_pct=slippage_pct,
         allow_short=allow_short,
+        stop_loss_pct=stop_loss_pct,
+        take_profit_pct=take_profit_pct,
+        atr_sl_mult=atr_sl_mult,
+        atr_tp_mult=atr_tp_mult,
+        pyramiding=pyramiding,
+        position_pct=position_pct,
     )
 
     # --------------------------------------------------
@@ -142,10 +197,26 @@ def run_backtest_ema_cross_v2(
         )
 
         # 2️⃣ Después calculamos señal EMA
-        signal, trigger = check_signal(slice_df, ema_fast, ema_slow)
+        current_side = bt.position["side"] if bt.position else None
+        signal, trigger = check_signal(slice_df, ema_fast, ema_slow, current_side=current_side)
 
         # 3️⃣ Ejecutamos señal
-        bt.on_signal(signal, price, timestamp, trigger, i)
+        atr_value = None
+        if atr_series is not None:
+            atr_raw = atr_series.iloc[i]
+            if pd.notna(atr_raw):
+                atr_value = float(atr_raw)
+
+        if signal in {"LONG", "SHORT"}:
+            if atr_series is not None and atr_value is None:
+                continue
+
+            if adx_series is not None and adx_threshold is not None:
+                adx_raw = adx_series.iloc[i]
+                if pd.isna(adx_raw) or float(adx_raw) < float(adx_threshold):
+                    continue
+
+        bt.on_signal(signal, price, timestamp, trigger, i, atr_value=atr_value)
 
    
     # --------------------------------------------------
@@ -169,48 +240,61 @@ def run_backtest_ema_cross_v2(
         equity.append(current_equity)
         equity_dates.append(t["exit_time"])
 
-    equity_filename = f"equity_curve_{run_id}.png"
-    equity_path = os.path.join(output_dir, equity_filename)
+    DB_equity_path = None
+    if generate_equity:
+        equity_filename = f"equity_curve_{run_id}.png"
+        equity_path = os.path.join(output_dir, equity_filename)
 
-    plt.figure(figsize=(10, 5))
-    plt.plot(equity_dates, equity)
-    plt.title("Equity Curve - EMA Cross V2")
-    plt.xlabel("Date")
-    plt.ylabel("Equity ($)")
-    plt.grid(True)
-    plt.gca().xaxis.set_major_locator(mdates.AutoDateLocator())
-    plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    plt.savefig(equity_path)
-    plt.close()
+        plt.figure(figsize=(10, 5))
+        plt.plot(equity_dates, equity)
+        plt.title("Equity Curve - EMA Cross V2")
+        plt.xlabel("Date")
+        plt.ylabel("Equity ($)")
+        plt.grid(True)
+        plt.gca().xaxis.set_major_locator(mdates.AutoDateLocator())
+        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
+        plt.xticks(rotation=45)
+        plt.tight_layout()
+        plt.savefig(equity_path)
+        plt.close()
 
-    DB_equity_path = f"backtests/ema_cross/{run_id}/{equity_filename}"
+        DB_equity_path = f"backtests/ema_cross/{run_id}/{equity_filename}"
+
+    if generate_report:
+        generate_quantstats_report(
+            equity_dates,
+            equity,
+            output_dir,
+            title=f"EMA Cross {symbol} {timeframe}",
+        )
 
     # --------------------------------------------------
     # 6) Plot Trades
     # --------------------------------------------------
-    plot_trades_by_date(
-        df=df,
-        trades=bt.trades,
-        start_date=start_date,
-        end_date=end_date,
-        title="EMA Cross V2"
-    )
+    trades_chart_path = None
+    if generate_plots:
+        plot_trades_by_date(
+            df=df,
+            trades=bt.trades,
+            start_date=start_date,
+            end_date=end_date,
+            title="EMA Cross V2",
+            show_plot=False,
+        )
 
-    indicators = {
-        f"EMA {ema_fast}": df["ema_fast"],
-        f"EMA {ema_slow}": df["ema_slow"],
-    }
+        indicators = {
+            f"EMA {ema_fast}": df["ema_fast"],
+            f"EMA {ema_slow}": df["ema_slow"],
+        }
 
-    trades_chart_path = plot_trades(
-        df=df,
-        trades=bt.trades,
-        indicators=indicators,
-        start_date=start_date,
-        end_date=end_date,
-        title="EMA Cross – Trades V2"
-    )
+        trades_chart_path = plot_trades(
+            df=df,
+            trades=bt.trades,
+            indicators=indicators,
+            start_date=start_date,
+            end_date=end_date,
+            title="EMA Cross – Trades V2"
+        )
 
     # --------------------------------------------------
     # 7) CSV
@@ -218,7 +302,24 @@ def run_backtest_ema_cross_v2(
     csv_path, DB_csv_path = export_trades_csv(
         bt.trades,
         output_dir,
-        run_id
+        run_id,
+        metadata={
+            "run_id": run_id,
+            "exchange": exchange,
+            "symbol": symbol,
+            "timeframe": timeframe,
+            "ema_fast": ema_fast,
+            "ema_slow": ema_slow,
+            "use_clean": use_clean,
+            "initial_balance": initial_balance,
+            "position_mode": position_mode,
+            "trade_size": trade_size,
+            "commission_pct": commission_pct,
+            "slippage_pct": slippage_pct,
+            "stop_loss_pct": stop_loss_pct,
+            "take_profit_pct": take_profit_pct,
+            "allow_short": allow_short,
+        },
     )
 
     return clean_stats, DB_equity_path, DB_csv_path

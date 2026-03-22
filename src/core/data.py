@@ -1,4 +1,6 @@
 from src.core.database import get_connection
+from scripts.sanitize_data import sanitize_data
+from src.data.downloader import BinanceDownloader
 from datetime import datetime, date
 import pandas as pd
 
@@ -43,6 +45,24 @@ def date_to_ms(value):
         raise ValueError(f"Invalid date '{value}'. Use 'YYYY-MM-DD' or an ISO-8601 datetime.") from e
 
 
+def _raw_has_data(conn, exchange, symbol, timeframe):
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT 1 FROM ohlcv WHERE exchange = ? AND symbol = ? AND timeframe = ? LIMIT 1",
+        (exchange, symbol, timeframe),
+    )
+    return cur.fetchone() is not None
+
+
+def _ensure_raw_data(exchange, symbol, timeframe, start_date):
+    if exchange != "binance":
+        return
+
+    downloader = BinanceDownloader()
+    download_start = start_date or "2018-01-01"
+    downloader.download(symbol=symbol, timeframe=timeframe, start_date=download_start)
+
+
 def fetch_ohlcv(exchange, symbol, timeframe, start_date=None, end_date=None, limit=50000, use_clean=True):
     table = "ohlcv_clean" if use_clean else "ohlcv"
 
@@ -79,6 +99,15 @@ def fetch_ohlcv(exchange, symbol, timeframe, start_date=None, end_date=None, lim
 
         cur.execute(query, tuple(params))
         rows = cur.fetchall()
+
+        if use_clean and not rows:
+            if not _raw_has_data(conn, exchange, symbol, timeframe):
+                _ensure_raw_data(exchange, symbol, timeframe, start_date)
+
+            if _raw_has_data(conn, exchange, symbol, timeframe):
+                sanitize_data(exchange=exchange, symbol=symbol, timeframe=timeframe)
+                cur.execute(query, tuple(params))
+                rows = cur.fetchall()
 
     if not rows:
         return pd.DataFrame()

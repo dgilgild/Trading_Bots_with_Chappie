@@ -1,88 +1,600 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<h2>Run Backtest</h2>
+<section class="grid">
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <h2 class="card-title">Run Backtest</h2>
+                <div class="card-subtitle">Configure strategy inputs and execution settings.</div>
+            </div>
+            <span class="pill">Strategy Lab</span>
+        </div>
 
-<form id="backtest-form" action="/run_backtest" method="POST">
-    <label>Strategy:</label>
-    <select name="strategy">
-        <option value="ema_cross">ema_cross</option>
-    </select>
-    <br><br>
+        <form id="backtest-form" action="/run_backtest" method="POST">
+            <div class="section-title">General</div>
+            <div class="section-grid">
+                <div class="form-row">
+                    <label>Strategy</label>
+                    <select name="strategy" id="strategy-select">
+                        <option value="ema_cross">EMA Cross</option>
+                        <option value="rsi_reversion">RSI Mean Reversion</option>
+                        <option value="donchian_breakout">Donchian Breakout</option>
+                        <option value="ema_trend_hold">EMA Trend Hold</option>
+                        <option value="bmsb">BMSB (Bull Market Support Band)</option>
+                        <option value="emalyarovich_smas">E.Malyarovich - SMAs Strategy</option>
+                        <option value="k_davey_mom_keltner">K. Davey - Momentum & Keltner Stochastic Combo</option>
+                        <option value="basic_keltner_reversion">Basic Keltner Channel Reversion</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label>Data Source</label>
+                    <select name="use_clean">
+                        <option value="1" selected>ohlcv_clean (sanitized)</option>
+                        <option value="0">ohlcv (raw)</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label>Exchange</label>
+                    <select name="exchange">
+                        <option value="binance" selected>binance</option>
+                        <option value="yfinance">yfinance</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label>Commission (%)</label>
+                    <input type="number" name="commission_pct" value="0.1" step="0.01">
+                </div>
+                <div class="form-row">
+                    <label>Slippage (%)</label>
+                    <input type="number" name="slippage_pct" value="0.1" step="0.01">
+                </div>
+                <div class="form-row">
+                    <label>Pyramiding</label>
+                    <input type="number" name="pyramiding" value="1" min="1" step="1">
+                </div>
+                <div class="form-row">
+                    <label>Symbol</label>
+                    <input type="text" name="symbol" value="BTC/USDT" list="symbol-options" id="symbol-input">
+                    <datalist id="symbol-options">
+                        <option value="BTC/USDT"></option>
+                        <option value="ETH/USDT"></option>
+                        <option value="ES"></option>
+                        <option value="MES"></option>
+                        <option value="ES=F"></option>
+                        <option value="MES=F"></option>
+                    </datalist>
+                </div>
+                <div class="form-row">
+                    <label>TimeFrame</label>
+                    <select name="timeframe">
+                        <option value="1m">1m</option>
+                        <option value="3m">3m</option>
+                        <option value="5m">5m</option>
+                        <option value="15m" selected>15m</option>
+                        <option value="30m">30m</option>
+                        <option value="1h">1h</option>
+                        <option value="2h">2h</option>
+                        <option value="4h">4h</option>
+                        <option value="6h">6h</option>
+                        <option value="12h">12h</option>
+                        <option value="1d">1d</option>
+                        <option value="3d">3d</option>
+                        <option value="1w">1w</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label>Initial Balance</label>
+                    <input type="number" name="initial_balance" value="1000" step="0.01">
+                </div>
+                <div class="form-row">
+                    <label>Start Date (YYYY-MM-DD)</label>
+                    <input type="text" name="start_date" value="2018-01-01">
+                </div>
+                <div class="form-row">
+                    <label>End Date (YYYY-MM-DD)</label>
+                    <input type="text" name="end_date" value="">
+                </div>
+            </div>
 
-    <label>Exchange:</label>
-    <input type="text" name="exchange" value="binance">
-    <br><br>
+            <div class="section-title">Trading Params</div>
+            <div class="section-grid">
+                <div class="form-row">
+                    <label>Position Size (%)</label>
+                    <input type="number" name="position_pct" value="3" step="0.1">
+                </div>
+                <div class="form-row">
+                    <label>Take Profit (%)</label>
+                    <input type="number" name="take_profit_pct" value="3" step="0.1" id="tp-input">
+                </div>
+                <div class="form-row">
+                    <label>Stop Loss (%)</label>
+                    <input type="number" name="stop_loss_pct" value="2" step="0.1" id="sl-input">
+                </div>
+                <div class="form-row">
+                    <label>Use TP/SL</label>
+                    <select name="use_tp_sl" id="use-tp-sl">
+                        <option value="1" selected>Yes</option>
+                        <option value="0">No</option>
+                    </select>
+                </div>
+            </div>
 
-    <label>Symbol:</label>
-    <input type="text" name="symbol" value="BTC/USDT">
-    <br><br>
+            <div class="section-title">Strategy Params</div>
+            <div class="section-grid">
+                <div class="form-row" data-strategy="ema_cross">
+                    <label>EMA Fast</label>
+                    <input type="number" name="ema_fast" value="12">
+                </div>
+                <div class="form-row" data-strategy="ema_cross">
+                    <label>EMA Slow</label>
+                    <input type="number" name="ema_slow" value="26">
+                </div>
+                <div class="form-row" data-strategy="emalyarovich_smas">
+                    <label>SMA Fast</label>
+                    <input type="number" name="sma_fast" value="20">
+                </div>
+                <div class="form-row" data-strategy="emalyarovich_smas">
+                    <label>SMA Slow</label>
+                    <input type="number" name="sma_slow" value="200">
+                </div>
+                <div class="form-row" data-strategy="emalyarovich_smas">
+                    <label>Slope Bars</label>
+                    <input type="number" name="slope_bars" value="3">
+                </div>
+                <div class="form-row" data-strategy="k_davey_mom_keltner">
+                    <label>Momentum Length (Long)</label>
+                    <input type="number" name="mom_length_long" value="40">
+                </div>
+                <div class="form-row" data-strategy="k_davey_mom_keltner">
+                    <label>Momentum Length (Short)</label>
+                    <input type="number" name="mom_length_short" value="40">
+                </div>
+                <div class="form-row" data-strategy="k_davey_mom_keltner">
+                    <label>Keltner Length</label>
+                    <input type="number" name="keltner_length" value="5">
+                </div>
+                <div class="form-row" data-strategy="k_davey_mom_keltner">
+                    <label>Keltner ATR Mult</label>
+                    <input type="number" name="keltner_atr_mult" value="0.5" step="0.1">
+                </div>
+                <div class="form-row" data-strategy="k_davey_mom_keltner">
+                    <label>Entry Threshold</label>
+                    <input type="number" name="keltner_entry_threshold" value="30">
+                </div>
+                <div class="form-row" data-strategy="k_davey_mom_keltner">
+                    <label>Exit Threshold</label>
+                    <input type="number" name="keltner_exit_threshold" value="70">
+                </div>
+                <div class="form-row" data-strategy="k_davey_mom_keltner">
+                    <label>Trend EMA</label>
+                    <input type="number" name="keltner_trend_ema" value="200">
+                </div>
+                <div class="form-row" data-strategy="k_davey_mom_keltner">
+                    <label>Volatility Mult</label>
+                    <input type="number" name="keltner_vol_mult" value="0.8" step="0.1">
+                </div>
+                <div class="form-row" data-strategy="k_davey_mom_keltner">
+                    <label>Volatility SMA</label>
+                    <input type="number" name="keltner_vol_sma" value="100">
+                </div>
+                <div class="form-row" data-strategy="k_davey_mom_keltner">
+                    <label>Use Position Sizing</label>
+                    <select name="use_position_sizing">
+                        <option value="1" selected>Yes</option>
+                        <option value="0">No</option>
+                    </select>
+                </div>
+                <div class="form-row" data-strategy="k_davey_mom_keltner">
+                    <label>Base Equity</label>
+                    <input type="number" name="base_equity" value="15000" step="1">
+                </div>
+                <div class="form-row" data-strategy="k_davey_mom_keltner">
+                    <label>Sizing Factor</label>
+                    <input type="number" name="sizing_factor" value="0.33" step="0.01">
+                </div>
+                <div class="form-row" data-strategy="k_davey_mom_keltner">
+                    <label>Max Contracts</label>
+                    <input type="number" name="max_contracts" value="15">
+                </div>
+                <div class="form-row" data-strategy="k_davey_mom_keltner">
+                    <label>ATR Period</label>
+                    <input type="number" name="atr_period" value="14">
+                </div>
+                <div class="form-row" data-strategy="k_davey_mom_keltner">
+                    <label>ATR SL Long Mult</label>
+                    <input type="number" name="atr_sl_long" value="4" step="0.1">
+                </div>
+                <div class="form-row" data-strategy="k_davey_mom_keltner">
+                    <label>ATR SL Short Mult</label>
+                    <input type="number" name="atr_sl_short" value="1" step="0.1">
+                </div>
+                <div class="form-row" data-strategy="basic_keltner_reversion">
+                    <label>KC EMA Length</label>
+                    <input type="number" name="kc_rev_ema_length" value="20">
+                </div>
+                <div class="form-row" data-strategy="basic_keltner_reversion">
+                    <label>KC ATR Length</label>
+                    <input type="number" name="kc_rev_atr_length" value="20">
+                </div>
+                <div class="form-row" data-strategy="basic_keltner_reversion">
+                    <label>KC ATR Mult</label>
+                    <input type="number" name="kc_rev_atr_mult" value="1.5" step="0.1">
+                </div>
+                <div class="form-row" data-strategy="bmsb">
+                    <label>BMSB SMA</label>
+                    <input type="number" name="bmsb_sma" value="20">
+                </div>
+                <div class="form-row" data-strategy="bmsb">
+                    <label>BMSB EMA</label>
+                    <input type="number" name="bmsb_ema" value="21">
+                </div>
+                <div class="form-row" data-strategy="bmsb">
+                    <label>Tensignal Window</label>
+                    <input type="number" name="bmsb_tensignal" value="3">
+                </div>
+                <div class="form-row" data-strategy="bmsb">
+                    <label>Trailing Stop (%)</label>
+                    <input type="number" name="bmsb_trail" value="0.05" step="0.001">
+                </div>
+                <div class="form-row" data-strategy="rsi_reversion">
+                    <label>RSI Period</label>
+                    <input type="number" name="rsi_period" value="14">
+                </div>
+                <div class="form-row" data-strategy="rsi_reversion">
+                    <label>RSI Entry</label>
+                    <input type="number" name="rsi_entry" value="30">
+                </div>
+                <div class="form-row" data-strategy="rsi_reversion">
+                    <label>RSI Exit</label>
+                    <input type="number" name="rsi_exit" value="50">
+                </div>
+                <div class="form-row" data-strategy="donchian_breakout">
+                    <label>Donchian Lookback</label>
+                    <input type="number" name="donchian_lookback" value="20">
+                </div>
+                <div class="form-row" data-strategy="ema_trend_hold">
+                    <label>Trend EMA</label>
+                    <input type="number" name="trend_ema" value="200">
+                </div>
+            </div>
 
-    <label>Timeframe:</label>
-    <input type="text" name="timeframe" value="15m">
-    <br><br>
+            <div class="strategy-legend" data-strategy="ema_cross">
+                Exit: EMA cross in opposite direction (if TP/SL = 0.00).
+            </div>
+            <div class="strategy-legend" data-strategy="rsi_reversion">
+                Exit: RSI above exit level (if TP/SL = 0.00).
+            </div>
+            <div class="strategy-legend" data-strategy="donchian_breakout">
+                Exit: Close below Donchian low (if TP/SL = 0.00).
+            </div>
+            <div class="strategy-legend" data-strategy="ema_trend_hold">
+                Exit: Close below Trend EMA (if TP/SL = 0.00).
+            </div>
+            <div class="strategy-legend" data-strategy="bmsb">
+                Exit: Close below BMSB (if TP/SL = 0.00).
+            </div>
+            <div class="strategy-legend" data-strategy="emalyarovich_smas">
+                Exit: Close below SMA Fast (if TP/SL = 0.00).
+            </div>
+            <div class="strategy-legend" data-strategy="k_davey_mom_keltner">
+                Exit: Keltner Stochastic crosses threshold (if TP/SL = 0.00).
+            </div>
+            <div class="strategy-legend" data-strategy="basic_keltner_reversion">
+                Exit: Price mean-reversion to KC EMA (if TP/SL = 0.00).
+            </div>
 
-    <label>Data Source:</label>
-    <select name="use_clean">
-        <option value="1" selected>ohlcv_clean (sanitized)</option>
-        <option value="0">ohlcv (raw)</option>
-    </select>
-    <br><br>
+            <div class="section-title">Charts Param</div>
+            <div class="section-grid">
+                <div class="form-row">
+                    <label>Chart Type</label>
+                    <select name="chart_type">
+                        <option value="equity">Equity Curve</option>
+                        <option value="trades">Trades Overlay</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label>Time Mode</label>
+                    <select name="time_mode">
+                        <option value="full">Full range</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="range">Custom range</option>
+                    </select>
+                </div>
+            </div>
 
-    <label>EMA Fast:</label>
-    <input type="number" name="ema_fast" value="12">
-    <br><br>
+            <div class="actions">
+                <a class="link-muted" href="{{ url_for('view_charts', strategy='ema_cross') }}">
+                    View generated charts
+                </a>
+                <button class="btn-primary" type="submit">Run Backtest</button>
+            </div>
+        </form>
+    </div>
 
-    <label>EMA Slow:</label>
-    <input type="number" name="ema_slow" value="26">
-    <br><br>
+    <div class="stack">
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <h2 class="card-title">Strategy Guide</h2>
+                    <div class="card-subtitle">Live notes for the selected strategy.</div>
+                </div>
+                <span class="pill">Guide</span>
+            </div>
 
-    <label>Start Date (YYYY-MM-DD):</label>
-    <input type="text" name="start_date" value="2018-01-01">
-    <br><br>
+            <div class="guide-block">
+                <div class="guide-title" id="guide-title">—</div>
+                <div class="guide-desc" id="guide-desc">Select a strategy to see details.</div>
 
-    <label>End Date (YYYY-MM-DD):</label>
-    <input type="text" name="end_date" value="">
-    <br><br>
+                <div class="guide-section">
+                    <div class="guide-label">Parameters</div>
+                    <ul class="guide-list" id="guide-params"></ul>
+                </div>
 
-    <h2>Charts</h2>
+                <div class="guide-section" id="guide-recommended-block">
+                    <div class="guide-label">Recommended</div>
+                    <ul class="guide-list" id="guide-recommended"></ul>
+                </div>
 
-    <label>Chart type:</label>
-    <select name="chart_type">
-        <option value="equity">Equity Curve</option>
-        <option value="trades">Trades Overlay</option>
-    </select>
+                <div class="guide-section">
+                    <div class="guide-label">Markets</div>
+                    <div class="guide-text" id="guide-markets"></div>
+                </div>
 
-    <br><br>
+                <div class="guide-section">
+                    <div class="guide-label">Timeframes</div>
+                    <div class="guide-text" id="guide-timeframes"></div>
+                </div>
+            </div>
+        </div>
 
-    <label>Time mode:</label>
-    <select name="time_mode">
-        <option value="full">Full range</option>
-        <option value="monthly">Monthly</option>
-        <option value="range">Custom range</option>
-    </select>
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <h2 class="card-title">Presets</h2>
+                    <div class="card-subtitle">Quick fills for common scenarios.</div>
+                </div>
+                <span class="pill">Quick Run</span>
+            </div>
 
-    <br><br>
+            <div class="preset-grid">
+                <button class="preset-btn" type="button" data-preset="btc-15m">BTC/USDT · 15m</button>
+                <button class="preset-btn" type="button" data-preset="eth-1h">ETH/USDT · 1h</button>
+                <button class="preset-btn" type="button" data-preset="swing">Swing · 4h</button>
+                <button class="preset-btn" type="button" data-preset="scalp">Scalp · 5m</button>
+            </div>
 
-    <label>Indicators:</label><br>
-    <input type="checkbox" name="show_ema_fast" checked> EMA Fast<br>
-    <input type="checkbox" name="show_ema_slow" checked> EMA Slow
+            <div class="preset-note">
+                Presets are placeholders for now. Wire them when you add more strategies.
+            </div>
+        </div>
 
-    <br><br>
-    <button type="submit">Run Backtest</button>
-</form>
+        <div class="card">
+        <div class="card-header">
+            <div>
+                <h2 class="card-title">Session Summary</h2>
+                <div class="card-subtitle">Results panel will populate after a run.</div>
+            </div>
+            <span class="pill">v0.1</span>
+        </div>
 
-<h2>Results</h2>
-<div id="results" aria-live="polite"></div>
+        <div class="stats-grid">
+            <div class="stat-tile">
+                <div class="stat-label">Last Run</div>
+                <div class="stat-value">—</div>
+            </div>
+            <div class="stat-tile">
+                <div class="stat-label">Total Trades</div>
+                <div class="stat-value">—</div>
+            </div>
+            <div class="stat-tile">
+                <div class="stat-label">Profit Factor</div>
+                <div class="stat-value">—</div>
+            </div>
+            <div class="stat-tile">
+                <div class="stat-label">Max Drawdown</div>
+                <div class="stat-value">—</div>
+            </div>
+        </div>
 
-<p>
-  <a href="{{ url_for('view_charts', strategy='ema_cross') }}">
-    View generated charts for this strategy
-  </a>
-</p>
+        <div class="section-title">Notes</div>
+        <div class="meta-list">
+            <span>Support for new strategies will appear here as you add them.</span>
+            <span>Use sanitized data for cleaner indicators.</span>
+            <span>Exports include balance evolution per trade.</span>
+        </div>
 
+        <div class="section-title">Results</div>
+        <div class="results-block" id="results" aria-live="polite">
+            <pre>Run a backtest to populate stats and chart links.</pre>
+        </div>
+    </div>
+</div>
+</section>
 
-<!-- If /js/backtest.js auto-submits or navigates, remove or adjust it to avoid conflicts -->
-<!-- <script src="/js/backtest.js"></script> -->
+<script>
+    const strategySelect = document.getElementById("strategy-select");
+    const strategyRows = document.querySelectorAll("[data-strategy]");
+    const symbolInput = document.getElementById("symbol-input");
+    const exchangeSelect = document.querySelector("select[name='exchange']");
+    const useTpSl = document.getElementById("use-tp-sl");
+    const tpInput = document.getElementById("tp-input");
+    const slInput = document.getElementById("sl-input");
+    const guideTitle = document.getElementById("guide-title");
+    const guideDesc = document.getElementById("guide-desc");
+    const guideParams = document.getElementById("guide-params");
+    const guideRecommended = document.getElementById("guide-recommended");
+    const guideRecommendedBlock = document.getElementById("guide-recommended-block");
+    const guideMarkets = document.getElementById("guide-markets");
+    const guideTimeframes = document.getElementById("guide-timeframes");
 
+    const strategyGuide = {
+        ema_cross: {
+            title: "EMA Cross",
+            description: "EMA fast/slow crossover with EMA200 trend filter.",
+            params: ["EMA Fast", "EMA Slow", "Stop Loss %", "Take Profit %", "Use TP/SL"],
+            recommended: [],
+            markets: "Crypto (BTC/USDT)",
+            timeframes: "15m–1h",
+        },
+        rsi_reversion: {
+            title: "RSI Mean Reversion",
+            description: "Long on RSI oversold, exit on RSI recovery.",
+            params: ["RSI Period", "RSI Entry", "RSI Exit", "Stop Loss %", "Take Profit %", "Use TP/SL"],
+            recommended: [],
+            markets: "Range-bound markets",
+            timeframes: "15m–1h",
+        },
+        donchian_breakout: {
+            title: "Donchian Breakout",
+            description: "Long on breakout; exit below Donchian low.",
+            params: ["Donchian Lookback", "Stop Loss %", "Take Profit %", "Use TP/SL"],
+            recommended: ["Lookback 55"],
+            markets: "Trend markets",
+            timeframes: "4h–1d",
+        },
+        ema_trend_hold: {
+            title: "EMA Trend Hold",
+            description: "Hold long above trend EMA; exit below it.",
+            params: ["Trend EMA", "Stop Loss %", "Take Profit %", "Use TP/SL"],
+            recommended: [],
+            markets: "Trend markets",
+            timeframes: "4h–1d",
+        },
+        bmsb: {
+            title: "BMSB",
+            description: "Bull Market Support Band with trailing logic.",
+            params: ["BMSB SMA", "BMSB EMA", "Tensignal Window", "Trailing Stop %", "Use TP/SL"],
+            recommended: [],
+            markets: "Crypto",
+            timeframes: "1d",
+        },
+        emalyarovich_smas: {
+            title: "E.Malyarovich - SMAs",
+            description: "SMA20/200 trend + pullback touch; exit below SMA fast.",
+            params: ["SMA Fast", "SMA Slow", "Slope Bars", "Stop Loss %", "Take Profit %", "Use TP/SL"],
+            recommended: ["SMA Fast 20", "SMA Slow 200", "Slope Bars 3"],
+            markets: "Trend markets",
+            timeframes: "4h–1d",
+        },
+        k_davey_mom_keltner: {
+            title: "K. Davey - Momentum & Keltner",
+            description: "Daily momentum + Keltner stochastic with ATR stops.",
+            params: [
+                "Momentum Long/Short",
+                "KC Length",
+                "KC ATR Mult",
+                "Entry/Exit Thresholds",
+                "Trend EMA",
+                "Volatility Filter",
+                "ATR Period",
+                "ATR SL Long/Short",
+                "Position Sizing",
+            ],
+            recommended: [
+                "Entry 30 / Exit 70",
+                "Momentum 40/40",
+                "Trend EMA 200",
+                "ATR 14",
+                "Vol SMA 100",
+                "Vol Mult 0.8",
+            ],
+            markets: "ES=F / MES=F",
+            timeframes: "1d only",
+        },
+        basic_keltner_reversion: {
+            title: "Basic Keltner Channel Reversion",
+            description: "Mean-reversion using Keltner Channel extremes and EMA centerline exits.",
+            params: [
+                "KC EMA Length",
+                "KC ATR Length",
+                "KC ATR Mult",
+                "Stop Loss %",
+                "Take Profit %",
+                "Use TP/SL",
+            ],
+            recommended: [],
+            markets: "Crypto / Index Futures",
+            timeframes: "15m–1d",
+        },
+    };
+
+    function updateStrategyFields() {
+        const selected = strategySelect.value;
+        strategyRows.forEach((row) => {
+            const strategies = row.dataset.strategy.split(" ");
+            if (strategies.includes(selected)) {
+                row.classList.remove("is-hidden");
+            } else {
+                row.classList.add("is-hidden");
+            }
+        });
+    }
+
+    strategySelect.addEventListener("change", updateStrategyFields);
+    updateStrategyFields();
+
+    function updateExchangeFromSymbol() {
+        const symbol = (symbolInput.value || "").trim();
+        if (!symbol) {
+            return;
+        }
+
+        const upper = symbol.toUpperCase();
+        const isCrypto = symbol.includes("/") || upper.endsWith("USDT") || upper.endsWith("BTC");
+        const isFutures = ["ES", "MES", "ES=F", "MES=F"].includes(upper);
+
+        if (isCrypto) {
+            exchangeSelect.value = "binance";
+            return;
+        }
+
+        if (isFutures) {
+            exchangeSelect.value = "yfinance";
+        }
+    }
+
+    symbolInput.addEventListener("change", updateExchangeFromSymbol);
+    symbolInput.addEventListener("blur", updateExchangeFromSymbol);
+
+    function updateTpSlState() {
+        const enabled = useTpSl.value === "1";
+        tpInput.disabled = !enabled;
+        slInput.disabled = !enabled;
+    }
+
+    useTpSl.addEventListener("change", updateTpSlState);
+    updateTpSlState();
+
+    function renderGuide() {
+        const selected = strategySelect.value;
+        const data = strategyGuide[selected];
+        if (!data) {
+            guideTitle.textContent = "—";
+            guideDesc.textContent = "Select a strategy to see details.";
+            guideParams.innerHTML = "";
+            guideRecommended.innerHTML = "";
+            guideRecommendedBlock.style.display = "none";
+            guideMarkets.textContent = "";
+            guideTimeframes.textContent = "";
+            return;
+        }
+
+        guideTitle.textContent = data.title;
+        guideDesc.textContent = data.description;
+        guideParams.innerHTML = data.params.map((p) => `<li>${p}</li>`).join("");
+        if (data.recommended.length) {
+            guideRecommended.innerHTML = data.recommended.map((p) => `<li>${p}</li>`).join("");
+            guideRecommendedBlock.style.display = "block";
+        } else {
+            guideRecommended.innerHTML = "";
+            guideRecommendedBlock.style.display = "none";
+        }
+        guideMarkets.textContent = data.markets;
+        guideTimeframes.textContent = data.timeframes;
+    }
+
+    strategySelect.addEventListener("change", renderGuide);
+    renderGuide();
+</script>
 {% endblock %}

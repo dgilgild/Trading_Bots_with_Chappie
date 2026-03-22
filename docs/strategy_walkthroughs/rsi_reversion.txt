@@ -1,0 +1,48 @@
+Strategy name
+rsi_reversion
+
+Files reviewed
+- src/strategies/rsi_reversion/strategy.py
+- src/strategies/rsi_reversion/backtest_rsi_reversion_v2.py
+
+Step-by-step execution flow
+1) Backtest fetches OHLCV and computes RSI on close.
+2) BacktesterV2 is initialized with execution, fees, direction, stop settings, pyramiding, and sizing.
+3) Loop starts at rsi_period + 1 bars.
+4) bt.on_bar is called first each bar.
+5) Current RSI value is taken from slice_df up to previous bar index i.
+6) check_signal returns LONG on oversold condition and EXIT long on RSI recovery above exit threshold.
+7) Signal executes via bt.on_signal at current close.
+8) Backtest exports stats, equity curve, optional report, and trades CSV.
+
+Parameters and defaults
+- Strategy-specific: rsi_period (required), rsi_entry (required), rsi_exit (required).
+- Execution and cost: initial_balance=1000.0, commission_pct=0.001, slippage_pct=0.001.
+- Position controls: position_mode="all_in", trade_size=100.0, position_pct=None, pyramiding=1.
+- Direction and risk: allow_short=False, stop_loss_pct=0.02, take_profit_pct=None.
+
+Indicators/calculations
+- RSI(close, rsi_period) from src.core.ta.compute_rsi.
+
+Entry conditions
+- LONG when rsi_value < rsi_entry.
+
+Exit conditions
+- EXIT long when current_side is LONG and rsi_value > rsi_exit.
+
+Risk and position management (SL/TP/ATR/trailing/pyramiding/position sizing)
+- Uses fixed percent stop_loss_pct and optional take_profit_pct in BacktesterV2.
+- No ATR-based stop logic in this runner.
+- No trailing-stop logic in strategy code.
+- Pyramiding supported by BacktesterV2 (default 1).
+- Position sizing controlled by BacktesterV2 mode and optional position_pct.
+
+Outputs (trades, stats, plots, reports)
+- clean_stats from bt.stats().
+- Equity curve PNG under static/backtests/rsi_reversion/<run_id>/.
+- Trades CSV with RSI parameter metadata.
+- QuantStats report when enabled.
+
+Known ambiguities or inconsistencies in the code
+- No explicit empty-data guard before assigning RSI and entering loop.
+- signal logic uses slice_df = df.iloc[:i], then takes slice_df.iloc[-1]["rsi"], which means signals are based on previous bar RSI while orders execute on current bar close.

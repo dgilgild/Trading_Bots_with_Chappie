@@ -1,5 +1,6 @@
 SYMBOL = "BTC/USDT"
 TIMEFRAME = "15m"
+EXCHANGE = "binance"
 
 EMA_FAST = 20
 EMA_SLOW = 50

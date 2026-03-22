@@ -1,0 +1,53 @@
+Strategy name
+bmsb
+
+Files reviewed
+- src/strategies/bmsb/strategy.py
+- src/strategies/bmsb/backtest_bmsb_v2.py
+
+Step-by-step execution flow
+1) Backtest fetches OHLCV and exits early if no data.
+2) compute_bmsb adds two lines: bmsb_sma and bmsb_ema, then bmsb = max(sma, ema) per bar.
+3) compute_tensignal converts close > bmsb to +1 and close <= bmsb to -1, then rolling-sums over tensignal_window.
+4) BacktesterV2 is initialized with execution, fee, SL/TP, pyramiding, and position controls.
+5) Optional trading_start_date gate skips bars before the chosen UTC timestamp.
+6) If use_tp_sl is true and there is an open LONG, stop_price is trailed upward by trail_percent.
+7) bt.on_bar runs first each bar, then entry/exit logic is evaluated.
+8) LONG is opened when buysignal and tensignal >= 1; LONG exits on bmsb crossunder.
+9) Results are exported as stats, equity curve, optional report, and trades CSV.
+
+Parameters and defaults
+- Core indicators: sma_period=20, ema_period=21, tensignal_window=3.
+- Trailing: trail_percent=0.05, use_tp_sl=True.
+- Execution and cost: initial_balance=1000.0, commission_pct=0.001, slippage_pct=0.001.
+- Position controls: position_mode="all_in", trade_size=100.0, position_pct=None, pyramiding=1.
+- Direction and risk: allow_short=False, stop_loss_pct=None, take_profit_pct=None.
+
+Indicators/calculations
+- bmsb_sma = rolling mean of close over sma_period.
+- bmsb_ema = EMA(close, ema_period).
+- bmsb = max(bmsb_sma, bmsb_ema).
+- tensignal = rolling sum of (+1/-1) over tensignal_window.
+
+Entry conditions
+- LONG when close > bmsb and tensignal >= 1.
+
+Exit conditions
+- EXIT long when previous close >= previous bmsb and current close < current bmsb (crossunder).
+
+Risk and position management (SL/TP/ATR/trailing/pyramiding/position sizing)
+- No ATR-based SL/TP logic in this runner.
+- Optional trailing stop updates only for open LONG positions.
+- stop_loss_pct and take_profit_pct are passed to BacktesterV2 but default to None.
+- Pyramiding available via BacktesterV2 (default 1).
+- Position sizing by BacktesterV2 (all_in by default; optional position_pct).
+
+Outputs (trades, stats, plots, reports)
+- clean_stats from bt.stats().
+- Equity curve PNG under static/backtests/bmsb/<run_id>/.
+- Trades CSV including bmsb metadata fields.
+- QuantStats report when generate_report is true.
+
+Known ambiguities or inconsistencies in the code
+- Parameter use_tp_sl controls only the custom trailing-stop block; it does not toggle all stop/take-profit logic inside BacktesterV2.
+- CSV metadata writes SMA/EMA periods into columns named ema_fast/ema_slow, which is naming mismatch for this strategy.

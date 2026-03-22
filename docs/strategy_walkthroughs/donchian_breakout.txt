@@ -1,0 +1,52 @@
+Strategy name
+donchian_breakout
+
+Files reviewed
+- src/strategies/donchian_breakout/strategy.py
+- src/strategies/donchian_breakout/backtest_donchian_breakout_v2.py
+
+Step-by-step execution flow
+1) Backtest fetches OHLCV data, computes Donchian levels, and optional ATR series.
+2) BacktesterV2 is initialized with fixed SL/TP settings and optional ATR multipliers.
+3) Loop starts after donchian_lookback + 1 bars.
+4) For each bar: bt.on_bar is called first.
+5) Signal is computed using check_signal on slice_df = df.iloc[:i] (data up to previous bar).
+6) check_signal returns LONG on breakout above donchian_high and EXIT from LONG on break below donchian_low.
+7) If ATR mode is enabled, entries are skipped until atr_value is not NaN.
+8) Signal is executed with bt.on_signal(..., atr_value=atr_value).
+9) Final outputs: stats, equity curve image, report, and trades CSV.
+
+Parameters and defaults
+- Strategy-specific: donchian_lookback (required, no default).
+- ATR options: atr_period=None, atr_sl_mult=None, atr_tp_mult=None.
+- Execution and cost: initial_balance=1000.0, commission_pct=0.001, slippage_pct=0.001.
+- Position controls: position_mode="all_in", trade_size=100.0, position_pct=None, pyramiding=1.
+- Direction and risk: allow_short=False, stop_loss_pct=0.02, take_profit_pct=None.
+
+Indicators/calculations
+- donchian_high = rolling max(high, lookback).shift(1).
+- donchian_low = rolling min(low, lookback).shift(1).
+- Optional ATR from src.core.ta.compute_atr for ATR-based stop/take-profit logic in BacktesterV2.
+
+Entry conditions
+- LONG when close > donchian_high.
+
+Exit conditions
+- EXIT long when close < donchian_low.
+
+Risk and position management (SL/TP/ATR/trailing/pyramiding/position sizing)
+- Default stop_loss_pct=0.02 passed to BacktesterV2.
+- Optional ATR stop/take-profit via atr_sl_mult and atr_tp_mult if atr_period is provided.
+- No explicit trailing-stop logic in this strategy runner.
+- Pyramiding supported by BacktesterV2 (default 1).
+- Position sizing handled by BacktesterV2 mode and optional position_pct.
+
+Outputs (trades, stats, plots, reports)
+- clean_stats from bt.stats().
+- Equity curve PNG under static/backtests/donchian_breakout/<run_id>/.
+- Trades CSV with run metadata.
+- QuantStats report when enabled.
+
+Known ambiguities or inconsistencies in the code
+- No explicit empty-data guard after fetch_ohlcv; compute_donchian is called directly.
+- Signal is computed from df.iloc[:i] (excluding current bar), but order executes on current bar close; this introduces a one-bar timing offset compared with common same-bar-close signal logic.

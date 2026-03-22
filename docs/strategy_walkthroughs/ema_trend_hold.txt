@@ -1,0 +1,47 @@
+Strategy name
+ema_trend_hold
+
+Files reviewed
+- src/strategies/ema_trend_hold/strategy.py
+- src/strategies/ema_trend_hold/backtest_ema_trend_hold_v2.py
+
+Step-by-step execution flow
+1) Backtest loads OHLCV and computes ema_trend from close using trend_ema period.
+2) BacktesterV2 is initialized with fee/slippage, direction, stop settings, pyramiding, and sizing.
+3) Loop starts at trend_ema + 1 bars.
+4) bt.on_bar is called first each bar.
+5) Strategy check_signal compares current close with current ema_trend.
+6) Signal is executed with bt.on_signal at current close.
+7) Results are exported as stats, equity curve image, optional report, and trades CSV.
+
+Parameters and defaults
+- Strategy-specific: trend_ema (required).
+- Execution and cost: initial_balance=1000.0, commission_pct=0.001, slippage_pct=0.001.
+- Position controls: position_mode="all_in", trade_size=100.0, position_pct=None, pyramiding=1.
+- Direction and risk: allow_short=False, stop_loss_pct=0.02, take_profit_pct=None.
+- Output flags: generate_report=True, generate_plots=True, generate_equity=True.
+
+Indicators/calculations
+- ema_trend = EMA(close, trend_ema) via pandas ewm.
+
+Entry conditions
+- LONG when price > ema_trend.
+
+Exit conditions
+- EXIT long when current_side is LONG and price < ema_trend.
+
+Risk and position management (SL/TP/ATR/trailing/pyramiding/position sizing)
+- Uses percent stop_loss_pct and optional take_profit_pct through BacktesterV2.
+- No ATR stop, no trailing stop in strategy code.
+- Pyramiding supported by BacktesterV2 (default 1).
+- Position sizing controlled by BacktesterV2 mode and optional position_pct.
+
+Outputs (trades, stats, plots, reports)
+- clean_stats from bt.stats().
+- Equity curve PNG under static/backtests/ema_trend_hold/<run_id>/.
+- Trades CSV with metadata.
+- QuantStats report when enabled.
+
+Known ambiguities or inconsistencies in the code
+- No explicit empty-data check before writing df["ema_trend"] and entering the loop.
+- The logic can emit repeated LONG signals on every bar above ema_trend; duplicate-entry handling is left to BacktesterV2 and pyramiding rules.

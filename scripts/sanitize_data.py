@@ -17,7 +17,11 @@ TIMEFRAME_TO_MS = {
     "1h": 3_600_000,
     "2h": 7_200_000,
     "4h": 14_400_000,
-    "1d": 86_400_000
+    "6h": 21_600_000,
+    "12h": 43_200_000,
+    "1d": 86_400_000,
+    "3d": 259_200_000,
+    "1w": 604_800_000,
 }
 
 
@@ -224,10 +228,8 @@ def sanitize_data(exchange="binance", symbol="BTC/USDT", timeframe="15m"):
     report_lines.append("Saving sanitized candles into table: ohlcv_clean")
 
     cur = conn.cursor()
-    cur.execute("DROP TABLE IF EXISTS ohlcv_clean")
-
     cur.execute("""
-        CREATE TABLE ohlcv_clean (
+        CREATE TABLE IF NOT EXISTS ohlcv_clean (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             exchange TEXT,
             symbol TEXT,
@@ -240,6 +242,11 @@ def sanitize_data(exchange="binance", symbol="BTC/USDT", timeframe="15m"):
             volume REAL
         )
     """)
+
+    cur.execute(
+        "DELETE FROM ohlcv_clean WHERE exchange = ? AND symbol = ? AND timeframe = ?",
+        (exchange, symbol, timeframe),
+    )
 
     conn.commit()
 

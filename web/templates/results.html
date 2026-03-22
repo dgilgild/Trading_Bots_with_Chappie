@@ -1,28 +1,155 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<h2>Backtest Results (Run ID: {{ run["run_id"] }})</h2>
+<section class="grid">
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <h2 class="card-title">Backtest Results</h2>
+                <div class="card-subtitle">Run ID: {{ run["run_id"] }}</div>
+            </div>
+            <span class="pill">Completed</span>
+        </div>
 
-<h3>Params</h3>
-<pre>{{ params | tojson(indent=2) }}</pre>
+        <div class="section-title">Stats</div>
+        <div class="results-block">
+            <pre>{{ stats | tojson(indent=2) }}</pre>
+        </div>
 
-<h3>Stats</h3>
-<pre>{{ stats | tojson(indent=2) }}</pre>
+    <div class="section-title">Params</div>
+    <div class="results-block">
+        <pre>{{ params | tojson(indent=2) }}</pre>
+    </div>
 
-{% if run["chart_path"] %}
-<h3>Chart</h3>
+    {% if exit_note %}
+    <div class="section-title">Exit Rule</div>
+    <div class="results-block">
+        <pre>{{ exit_note }}</pre>
+    </div>
+    {% endif %}
 
-<img src="{{ url_for('static', filename=run['chart_path']) }}"
-     style="max-width:900px;">
-{% endif %}
+        <div class="section-title">Reports</div>
+        <div class="reports-grid">
+            {% if run["csv_path"] %}
+            <a class="btn-primary" href="{{ url_for('static', filename=run['csv_path']) }}" download>
+                Download Trades CSV
+            </a>
+            {% endif %}
 
-{% if run["csv_path"] %}
-<h3>Trades CSV</h3>
+            {% if run["chart_path"] %}
+            <a class="btn-primary" href="{{ url_for('static', filename=run['chart_path']) }}" target="_blank">
+                Open Equity Chart
+            </a>
+            {% endif %}
 
-<a href="{{ url_for('static', filename=run['csv_path']) }}" download>
-    Download Trades CSV
-</a>
-{% endif %}
+            {% if report_path %}
+            <a class="btn-primary" href="{{ url_for('static', filename=report_path) }}" target="_blank">
+                Open QuantStats Report
+            </a>
+            {% else %}
+            <span class="report-muted">QuantStats report not available</span>
+            {% endif %}
+        </div>
+    </div>
 
+    <div>
+        {% if run["chart_path"] %}
+        <div class="section-title">Equity Chart</div>
+        <div class="chart-frame">
+            <img src="{{ url_for('static', filename=run['chart_path']) }}" alt="Backtest equity chart">
+        </div>
+        {% endif %}
 
+        <div class="section-title">Trades Graphs (50 Candles per Window)</div>
+        {% if trades_charts %}
+            <div class="trades-window-controls" data-trades-window-controls>
+                <button type="button" class="trades-nav-btn" data-trades-prev>Previous</button>
+                <div class="trades-nav-index">
+                    <span data-trades-current-index>1</span>
+                    /
+                    <span>{{ trades_charts|length }}</span>
+                </div>
+                <button type="button" class="trades-nav-btn" data-trades-next>Next</button>
+            </div>
+
+            <div class="report-muted" data-trades-label>{{ trades_charts[0].label }}</div>
+            {% for chart in trades_charts %}
+            <div class="chart-frame trade-window-slide{% if loop.first %} is-active{% endif %}" data-trades-slide data-trades-index="{{ loop.index0 }}" {% if not loop.first %}hidden{% endif %}>
+                <img src="{{ url_for('static', filename=chart.path) }}" alt="Trades candlestick chart with entry and exit conditions">
+            </div>
+            {% endfor %}
+            {% if trades_chart_note %}
+            <div class="report-muted">{{ trades_chart_note }}</div>
+            {% endif %}
+
+            <script>
+            (function () {
+                var controls = document.querySelector('[data-trades-window-controls]');
+                if (!controls) {
+                    return;
+                }
+
+                var slides = Array.prototype.slice.call(document.querySelectorAll('[data-trades-slide]'));
+                if (!slides.length) {
+                    controls.hidden = true;
+                    return;
+                }
+
+                var labels = {{ trades_charts | map(attribute='label') | list | tojson }};
+                var currentIndexNode = controls.querySelector('[data-trades-current-index]');
+                var labelNode = document.querySelector('[data-trades-label]');
+                var prevBtn = controls.querySelector('[data-trades-prev]');
+                var nextBtn = controls.querySelector('[data-trades-next]');
+                var currentIndex = 0;
+
+                var updateView = function () {
+                    for (var i = 0; i < slides.length; i += 1) {
+                        var isActive = i === currentIndex;
+                        slides[i].classList.toggle('is-active', isActive);
+                        slides[i].hidden = !isActive;
+                    }
+
+                    if (currentIndexNode) {
+                        currentIndexNode.textContent = String(currentIndex + 1);
+                    }
+
+                    if (labelNode) {
+                        labelNode.textContent = labels[currentIndex] || '';
+                    }
+
+                    if (prevBtn) {
+                        prevBtn.disabled = currentIndex === 0;
+                    }
+
+                    if (nextBtn) {
+                        nextBtn.disabled = currentIndex === slides.length - 1;
+                    }
+                };
+
+                if (prevBtn) {
+                    prevBtn.addEventListener('click', function () {
+                        if (currentIndex > 0) {
+                            currentIndex -= 1;
+                            updateView();
+                        }
+                    });
+                }
+
+                if (nextBtn) {
+                    nextBtn.addEventListener('click', function () {
+                        if (currentIndex < slides.length - 1) {
+                            currentIndex += 1;
+                            updateView();
+                        }
+                    });
+                }
+
+                updateView();
+            })();
+            </script>
+        {% else %}
+        <div class="report-muted">{{ trades_chart_error or "Trades graph not available for this run." }}</div>
+        {% endif %}
+    </div>
+</section>
 {% endblock %}

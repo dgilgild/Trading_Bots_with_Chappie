@@ -1,0 +1,75 @@
+Strategy name
+k_davey_mom_keltner
+
+Files reviewed
+- src/strategies/k_davey_mom_keltner/strategy.py
+- src/strategies/k_davey_mom_keltner/backtest_k_davey_mom_keltner_v2.py
+
+Step-by-step execution flow
+1) Backtest fetches OHLCV and warns if timeframe is not 1d.
+2) It computes keltner_stoch, trend_ema, ATR for stops, and ATR volatility filter plus its rolling average.
+3) Base equity and contract multiplier are set (special handling for MES symbol).
+4) BacktesterV2 is initialized in futures pnl_mode with ATR stop multipliers by side.
+5) Main loop starts after the maximum warmup across momentum, Keltner, ATR, trend, and volatility windows.
+6) Pending actions are executed at next bar open (ENTRY or EXIT).
+7) If a position exists and ATR is valid, stop is updated from average price via bt.update_stop_from_avg.
+8) bt.on_bar checks intrabar stop execution.
+9) Net equity and dynamic contract count are computed; bt.trade_size is updated each bar.
+10) Entry conditions evaluate momentum, trend, volatility, and Keltner stochastic thresholds.
+11) Exit conditions set next-bar EXIT when Keltner stochastic exceeds side-specific exit threshold.
+12) Outputs are generated: stats, equity curve, optional report, and trades CSV.
+
+Parameters and defaults
+- Momentum and Keltner: mom_length_long=40, mom_length_short=40, keltner_length=5, keltner_atr_mult=0.5.
+- Thresholds and trend: entry_threshold=30.0, exit_threshold=70.0, trend_ema=200.
+- Volatility filter: volatility_atr_period=14, volatility_sma_period=100, volatility_mult=0.8.
+- Position sizing: use_position_sizing=True, base_equity=15000.0, sizing_factor=0.33, max_contracts=15.
+- Execution and costs: initial_balance=1000.0, position_mode="fixed", commission_pct=0.001, slippage_pct=0.001.
+- Direction and risk: allow_short=True, atr_period=14, atr_sl_mult_long=4.0, atr_sl_mult_short=1.0, pyramiding=1, position_pct=None.
+
+Indicators/calculations
+- Keltner stochastic proxy: 100 * (close - lower_kc) / (upper_kc - lower_kc).
+- Momentum checks: close vs close N bars ago (separate N for long/short).
+- trend_ema filter from close.
+- ATR for stop updates and initial ATR-based risk.
+- Volatility filter: ATR(volatility_atr_period) > rolling_mean_ATR * volatility_mult.
+- Dynamic contracts from net_equity/base_equity formula (or position_pct path).
+
+Entry conditions
+- LONG setup requires all:
+  - price > close[mom_length_long bars ago]
+  - price > trend_ema
+  - volatility filter true
+  - keltner_stoch < entry_threshold
+  - no position, or existing LONG with room for pyramiding.
+- SHORT setup (if allow_short) mirrors long:
+  - price < close[mom_length_short bars ago]
+  - price < trend_ema
+  - volatility filter true
+  - keltner_stoch > (100 - entry_threshold)
+  - no position, or existing SHORT with room for pyramiding.
+- Entries are queued and executed on next bar open.
+
+Exit conditions
+- If LONG and keltner_stoch > exit_threshold, queue EXIT for next bar open.
+- If SHORT and keltner_stoch < (100 - exit_threshold), queue EXIT for next bar open.
+- Additional exits can happen intrabar from ATR stop handling in BacktesterV2.
+
+Risk and position management (SL/TP/ATR/trailing/pyramiding/position sizing)
+- Uses ATR-based stop distances with different multipliers for LONG and SHORT.
+- No fixed percent SL/TP in this runner (both set to None in BacktesterV2 init).
+- Dynamic position size (contracts) based on equity progression, capped by max_contracts.
+- Optional position_pct path overrides formula-based sizing.
+- Pyramiding supported and checked with len(bt.lots) < bt.pyramiding.
+- Futures PnL mode with contract multiplier (5 for MES, else 50 default path).
+
+Outputs (trades, stats, plots, reports)
+- clean_stats from bt.stats().
+- Equity curve PNG under static/backtests/k_davey_mom_keltner/<run_id>/.
+- Trades CSV with extensive strategy metadata.
+- QuantStats report when enabled.
+
+Known ambiguities or inconsistencies in the code
+- Function signature includes generate_plots but no trade-plot generation is implemented.
+- base_equity default in signature is 15000.0, but fallback block uses 1500.0 for MES only when base_equity is None.
+- Parameters named ema_fast/ema_slow appear in CSV schema although this strategy does not use EMA crossover periods.
