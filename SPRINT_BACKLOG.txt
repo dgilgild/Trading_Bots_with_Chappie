@@ -1,0 +1,159 @@
+Sprint Backlog - Backtesting System Hardening
+
+Sprint objective
+- Build a trustworthy validation pipeline: deterministic tests, baseline contracts,
+  and strategy comparison artifacts.
+
+Duration
+- 2 weeks (10 working days)
+
+Definition of done
+- One command validates all strategies.
+- Regression drift is immediately visible and actionable.
+- Outputs are both machine-readable and human-readable.
+- Docs explain run steps and failure interpretation.
+
+Priority order
+1) Test architecture and deterministic data contract
+2) Schema/timeline contracts
+3) Comparison artifacts
+4) Walk-forward first slice
+5) Final runbook and polish
+
+Epic A - Test Harness Formalization
+
+[ST-101] Create pytest structure for strategy tests
+- Priority: High
+- Estimate: M
+- Deliverables:
+  - tests/strategies/test_signal_logic.py
+  - tests/strategies/test_backtest_smoke.py
+  - tests/strategies/test_backtest_regression.py
+  - shared fixtures in tests/strategies/conftest.py
+- Acceptance criteria:
+  - Existing script checks are mirrored in pytest.
+  - Tests run locally with PYTHONPATH=. pytest.
+
+[ST-102] Add test markers and selective runs
+- Priority: High
+- Estimate: S
+- Deliverables:
+  - pytest markers: unit, smoke, regression
+  - marker documentation in docs/selftest_manual.txt
+- Acceptance criteria:
+  - Commands work:
+    - pytest -m unit
+    - pytest -m smoke
+    - pytest -m regression
+
+[ST-103] Keep compatibility wrapper script
+- Priority: Medium
+- Estimate: S
+- Deliverables:
+  - scripts/test_strategies_selftest.py remains usable (direct or wrapper mode)
+- Acceptance criteria:
+  - Existing workflow does not break.
+
+Epic B - Baseline Data and Contracts
+
+[ST-201] Freeze deterministic synthetic dataset contract
+- Priority: High
+- Estimate: S
+- Deliverables:
+  - src/core/testing/synthetic_data.py
+- Acceptance criteria:
+  - Same inputs always produce same OHLCV output.
+
+[ST-202] Add trade CSV schema validator
+- Priority: High
+- Estimate: M
+- Deliverables:
+  - src/core/testing/contracts.py
+- Acceptance criteria:
+  - Required columns validated for all strategy CSV exports.
+  - Type checks for key fields (net_pnl, position_size, bars_in_trade).
+  - Clear failure messages.
+
+[ST-203] Add timeline integrity checks
+- Priority: High
+- Estimate: S
+- Acceptance criteria:
+  - entry_time <= exit_time for every closed trade.
+  - No null entry/exit timestamps in closed trades.
+  - Optional monotonic exit ordering check.
+
+Epic C - Strategy Comparison Artifacts
+
+[ST-301] Generate unified comparison JSON
+- Priority: Medium
+- Estimate: M
+- Deliverables:
+  - docs/strategy_walkthroughs/metrics/strategy_comparison.json
+- Acceptance criteria:
+  - Includes per strategy: trades, net_pnl, win_rate, avg_pnl,
+    avg_bars_in_trade, drawdown proxy.
+
+[ST-302] Generate human-readable comparison report from JSON
+- Priority: Medium
+- Estimate: S
+- Deliverables:
+  - docs/strategy_walkthroughs/metrics/strategy_comparison_report.txt
+- Acceptance criteria:
+  - Report generated from JSON source of truth (no manual editing).
+
+[ST-303] Connect PDF generation to baseline metrics
+- Priority: Medium
+- Estimate: S
+- Deliverables:
+  - scripts/generate_strategy_pdfs.py uses unified metrics source when available.
+- Acceptance criteria:
+  - PDF generation remains deterministic and reproducible.
+
+Epic D - Walk-Forward Validation (First Slice)
+
+[ST-401] Implement rolling walk-forward evaluator
+- Priority: Medium
+- Estimate: L
+- Deliverables:
+  - src/core/analysis/walk_forward.py
+- Acceptance criteria:
+  - Configurable windows (example: 18m train / 6m test).
+  - Outputs per-window CSV/JSON metrics.
+
+[ST-402] Extend walk-forward run to all strategies
+- Priority: Medium
+- Estimate: M
+- Acceptance criteria:
+  - Handles all 8 strategies.
+  - Graceful handling for zero-trade windows.
+
+Suggested day-by-day plan
+
+Day 1-2
+- ST-201, ST-101
+
+Day 3-4
+- ST-102, ST-202
+
+Day 5
+- ST-203, stabilize tests
+
+Day 6-7
+- ST-301, ST-302
+
+Day 8
+- ST-303
+
+Day 9-10
+- ST-401 first pass, ST-402 partial, docs updates
+
+Risks and mitigations
+- Risk: brittle regression values after intentional logic changes.
+  - Mitigation: baseline update protocol documented in docs/selftest_manual.txt.
+- Risk: no-trade windows for some strategies.
+  - Mitigation: explicit zero-trade contract in regression and walk-forward outputs.
+
+Execution commands (target end-state)
+- PYTHONPATH=. python3 scripts/test_strategies_selftest.py
+- PYTHONPATH=. python3 scripts/generate_strategy_pdfs.py
+- PYTHONPATH=. pytest -m "unit or smoke or regression"

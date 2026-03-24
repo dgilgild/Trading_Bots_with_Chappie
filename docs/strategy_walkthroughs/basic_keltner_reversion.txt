@@ -1,0 +1,53 @@
+Strategy name
+basic_keltner_reversion
+
+Files reviewed
+- src/strategies/basic_keltner_reversion/strategy.py
+- src/strategies/basic_keltner_reversion/backtest_basic_keltner_reversion_v2.py
+
+Step-by-step execution flow
+1) Backtest loads OHLCV data with fetch_ohlcv and returns early if data is empty.
+2) A BacktesterV2 instance is created with fees, slippage, stop loss, take profit, pyramiding, and position sizing options.
+3) Loop starts after warmup = max(kc_ema_length, kc_atr_length) + 1.
+4) For each bar, bt.on_bar is called first (intrabar stop/take-profit checks).
+5) Strategy function keltner_reversion is called on data up to current bar.
+6) keltner_reversion computes EMA and ATR, then Keltner upper/lower bands.
+7) Signal is sent to bt.on_signal with current close price and trigger text.
+8) After loop, code builds stats, equity curve image, optional QuantStats report, and optional trades CSV.
+
+Parameters and defaults
+- Strategy-specific: kc_ema_length=20, kc_atr_length=20, kc_atr_mult=1.5.
+- Execution and cost: initial_balance=1000.0, commission_pct=0.001, slippage_pct=0.001.
+- Position controls: position_mode="all_in", trade_size=100.0, position_pct=None, pyramiding=1, allow_short=True.
+- Risk controls: stop_loss_pct=0.02, take_profit_pct=0.03.
+- Output flags: generate_report=True, generate_plots=True, generate_equity=True.
+
+Indicators/calculations
+- EMA(close, ema_length).
+- ATR(high, low, close, atr_length).
+- Keltner bands: upper = ema + atr * atr_mult, lower = ema - atr * atr_mult.
+
+Entry conditions
+- LONG when close < lower Keltner band.
+- SHORT when close > upper Keltner band.
+
+Exit conditions
+- EXIT long trigger when close >= EMA.
+- EXIT short trigger when close <= EMA.
+
+Risk and position management (SL/TP/ATR/trailing/pyramiding/position sizing)
+- Uses fixed percent stop loss and take profit through BacktesterV2 defaults in this runner.
+- No ATR-based stop in this strategy runner.
+- No trailing stop logic in strategy code.
+- Pyramiding is supported by BacktesterV2 (default 1).
+- Position sizing uses BacktesterV2 mode (all_in by default, optional position_pct).
+
+Outputs (trades, stats, plots, reports)
+- clean_stats dictionary from bt.stats().
+- Equity curve PNG under static/backtests/basic_keltner_reversion/<run_id>/.
+- Trades CSV with trade details and metadata.
+- QuantStats HTML report when enabled.
+
+Known ambiguities or inconsistencies in the code
+- In strategy.py, the two EXIT checks cover all remaining prices, so function emits EXIT whenever price is between bands; this can generate frequent EXIT signals even when no position exists.
+- export_trades_csv expects columns named ema_fast and ema_slow although this strategy does not use EMA crossover params (metadata sets them to None).

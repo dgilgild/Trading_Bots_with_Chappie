@@ -1,0 +1,86 @@
+Strategy comparison overview
+
+Scope
+- This document compares all strategy implementations currently under src/strategies.
+- It summarizes signal style, complexity, risk model, and notable implementation caveats.
+- Source details come from the per-strategy walkthrough files in docs/strategy_walkthroughs.
+
+Strategies included
+1) ema_cross
+2) rsi_reversion
+3) donchian_breakout
+4) ema_trend_hold
+5) bmsb
+6) emalyarovich_smas
+7) k_davey_mom_keltner
+8) basic_keltner_reversion
+
+Comparison matrix
+
+| Strategy | Signal style | Market bias | Shorts | Risk model | Position sizing | Complexity |
+|---|---|---|---|---|---|---|
+| ema_cross | Trend-following EMA crossover with trend filter | Trend | Yes | Percent SL/TP, optional ATR SL/TP, optional ADX gate | Backtester modes + optional position_pct | Medium |
+| rsi_reversion | Mean reversion from RSI oversold to RSI recovery | Mean reversion | No (default) | Percent SL/TP only | Backtester modes + optional position_pct | Low |
+| donchian_breakout | Breakout above prior high, exit below prior low | Trend breakout | No (default) | Percent SL/TP + optional ATR SL/TP | Backtester modes + optional position_pct | Low-Medium |
+| ema_trend_hold | Price above trend EMA, hold until close below trend EMA | Trend hold | No (default) | Percent SL/TP only | Backtester modes + optional position_pct | Low |
+| bmsb | Price over blended baseline plus rolling ten-signal confirmation | Trend with confirmation | No (default) | Optional custom trailing stop block + Backtester SL/TP inputs | Backtester modes + optional position_pct | Medium |
+| emalyarovich_smas | Pullback to fast SMA inside higher-timeframe trend | Trend pullback | No (default) | Percent SL/TP only | Backtester modes + optional position_pct | Medium |
+| k_davey_mom_keltner | Momentum + trend + volatility + Keltner thresholds, next-bar execution | Multi-filter trend/momentum | Yes | ATR-based stop updates, futures mode, no fixed percent SL/TP | Dynamic contracts or optional position_pct | High |
+| basic_keltner_reversion | Revert from KC extremes back toward EMA centerline | Mean reversion | Yes | Percent SL/TP only | Backtester modes + optional position_pct | Low-Medium |
+
+Step-by-step mental model for reading any strategy in this repo
+1) Data load and warmup
+- The runner pulls OHLCV with fetch_ohlcv and computes indicators.
+- Warmup length is strategy-specific (EMA/RSI/Donchian/SMA/ATR lookbacks).
+
+2) Bar loop order
+- Most runners call bt.on_bar first each bar.
+- This means stop/take-profit checks can fire before new signal logic.
+
+3) Signal generation
+- Strategy function returns a tuple: (signal, trigger).
+- Common signals are LONG, SHORT, EXIT, or None.
+
+4) Signal execution
+- bt.on_signal executes position transitions.
+- Pyramiding behavior and trigger fallback labels are handled in BacktesterV2.
+
+5) Outputs
+- Every runner computes stats, equity curve, CSV, and optional QuantStats report.
+- Some include extra plot generation flags; behavior is not always identical across runners.
+
+Complexity ranking (highest to lowest)
+1) k_davey_mom_keltner
+2) ema_cross
+3) bmsb
+4) emalyarovich_smas
+5) donchian_breakout
+6) basic_keltner_reversion
+7) rsi_reversion
+8) ema_trend_hold
+
+Why this ranking
+- k_davey_mom_keltner combines multi-filter entry logic, next-bar pending actions, ATR stop updates, futures PnL, and dynamic contract sizing.
+- ema_cross and bmsb add meaningful filter/trailing behavior beyond simple one-indicator triggers.
+- rsi_reversion and ema_trend_hold are straightforward single-indicator systems with simple entry/exit gates.
+
+Key cross-strategy caveats you should know
+1) Timing semantics are not fully uniform.
+- Some runners compute signals on prior-bar slices and execute on current close; K. Davey queues actions for next-bar open.
+
+2) CSV schema is reused across strategies.
+- Fields like ema_fast/ema_slow appear even for non-EMA-crossover systems (often set to None or repurposed).
+
+3) Repeated entry signals can happen by design.
+- Several strategies emit LONG repeatedly while condition stays true; actual adds depend on BacktesterV2 position/pyramiding checks.
+
+4) Exit generation differs by strategy style.
+- Some exits are explicit indicator exits.
+- Others rely heavily on BacktesterV2 stop logic once in position.
+
+Recommended usage by archetype
+- If you want the simplest baseline: ema_trend_hold or rsi_reversion.
+- If you want breakout logic: donchian_breakout.
+- If you want pullback trend entries: emalyarovich_smas.
+- If you want advanced futures-style dynamic sizing: k_davey_mom_keltner.
+- If you want mean-reversion with channel extremes and both sides: basic_keltner_reversion.

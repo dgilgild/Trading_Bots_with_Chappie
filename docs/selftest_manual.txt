@@ -1,0 +1,68 @@
+Self-test manual
+
+Purpose
+- Validate strategy logic and backtest execution quickly after code changes.
+- Catch regressions in signals, trade counts, and PnL baselines.
+
+What is included
+- scripts/test_strategies_selftest.py
+  - Signal-level tests (unit-style checks for strategy conditions)
+  - Backtest smoke tests (runner executes without crashing)
+  - Backtest regression tests (golden baseline checks)
+
+How to run
+1) Install dependencies
+   pip install -r requirements.txt
+
+2) Run self-tests
+   PYTHONPATH=. python3 scripts/test_strategies_selftest.py
+
+3) Read results
+   - PASS means behavior matches expected baseline.
+   - FAIL means behavior changed or broke.
+
+Test groups explained
+1) signal_logic / indicator_logic
+   - Verifies core strategy conditions with controlled inputs.
+
+2) backtest_smoke
+   - Monkeypatches fetch_ohlcv with deterministic synthetic data.
+   - Ensures each run_backtest_* function returns expected output shape.
+
+3) backtest_regression
+   - Uses deterministic synthetic data and fixed parameters.
+   - Confirms per strategy:
+     - total trade count
+     - total net PnL (tolerance 1e-3)
+     - first/last trigger text patterns in CSV
+
+When to run
+- Before committing changes to any strategy or backtester code.
+- After modifying fees, stops, sizing, pyramiding, or entry/exit logic.
+- After changing CSV schema fields used by reports/charts.
+
+How to interpret failures
+- signal_logic fail:
+  Core strategy condition behavior changed; inspect strategy.py first.
+
+- backtest_smoke fail:
+  Runner API, imports, or execution flow is broken.
+
+- backtest_regression fail:
+  Either a real behavior change happened or baseline is stale.
+
+Updating baselines intentionally
+- If behavior changed by design, update expected values in:
+  scripts/test_strategies_selftest.py
+  inside test_backtest_regression() expected dictionary.
+
+Recommended workflow
+1) Make strategy change.
+2) Run self-tests.
+3) If regression fails, verify if change is intentional.
+4) Update baseline only for intentional changes.
+5) Re-run until all tests pass.
+
+Optional report generation
+- To generate strategy PDFs and baseline CSV visuals, run:
+  PYTHONPATH=. python3 scripts/generate_strategy_pdfs.py

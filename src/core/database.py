@@ -62,8 +62,35 @@ def init_db():
         );
     """)
 
+    _ensure_backtest_run_columns(cursor)
+
     conn.commit()
     conn.close()
+
+
+def _ensure_backtest_run_columns(cursor):
+    cursor.execute("PRAGMA table_info(backtest_runs);")
+    existing_columns = {row[1] for row in cursor.fetchall()}
+
+    desired_columns = {
+        "ema_fast": "INTEGER",
+        "ema_slow": "INTEGER",
+        "use_clean": "INTEGER",
+        "initial_balance": "REAL",
+        "position_mode": "TEXT",
+        "trade_size": "REAL",
+        "commission_pct": "REAL",
+        "slippage_pct": "REAL",
+        "stop_loss_pct": "REAL",
+        "take_profit_pct": "REAL",
+        "allow_short": "INTEGER",
+    }
+
+    for column_name, column_type in desired_columns.items():
+        if column_name not in existing_columns:
+            cursor.execute(
+                f"ALTER TABLE backtest_runs ADD COLUMN {column_name} {column_type};"
+            )
 
 
 # --- Insert OHLCV batch ---

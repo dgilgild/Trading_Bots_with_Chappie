@@ -1,0 +1,61 @@
+Strategy name
+ema_cross
+
+Files reviewed
+- src/strategies/ema_cross/strategy.py
+- src/strategies/ema_cross/backtest_ema_cross_v2.py
+- src/strategies/ema_cross/config.py
+- src/strategies/ema_cross/runner.py
+
+Step-by-step execution flow
+1) Backtest fetches OHLCV and precomputes ema_fast and ema_slow columns.
+2) Optional ATR and ADX series are prepared for filters and ATR-based stops.
+3) BacktesterV2 is initialized with fee/slippage, direction, risk, pyramiding, and sizing controls.
+4) For each bar from ema_slow + 1 onward: bt.on_bar runs first for intrabar stop/take-profit handling.
+5) Strategy check_signal runs on historical slice and computes ema_fast, ema_slow, and ema_trend (default trend_period=200).
+6) Entry or exit signal is generated from EMA cross logic plus trend filter.
+7) For entry signals, ATR non-NaN is required if ATR mode is enabled; ADX >= adx_threshold is required if ADX filter is configured.
+8) Signal executes via bt.on_signal with optional atr_value.
+9) Backtest exports stats, equity curve image, report, and trades CSV; optional trade plots are generated.
+10) runner.py provides a live loop variant that waits for a new candle and prints LONG/SHORT/EXIT state transitions.
+
+Parameters and defaults
+- Strategy cross inputs: ema_fast (required), ema_slow (required), trend_period is fixed by strategy default at 200.
+- ATR and ADX filters: atr_period=None, atr_sl_mult=None, atr_tp_mult=None, adx_period=None, adx_threshold=None.
+- Execution and cost: initial_balance=1000.0, commission_pct=0.001, slippage_pct=0.01.
+- Position controls: position_mode="all_in", trade_size=100.0, position_pct=None, pyramiding=1.
+- Direction and risk: allow_short=True, stop_loss_pct=0.02, take_profit_pct=None.
+- Live config defaults (config.py): EXCHANGE="binance", SYMBOL="BTC/USDT", TIMEFRAME="15m", EMA_FAST=20, EMA_SLOW=50, POSITION_SIZE=0.001.
+
+Indicators/calculations
+- EMA fast and EMA slow crossover.
+- EMA trend filter (EMA200 by default in strategy.py).
+- Optional ATR and optional ADX filter in backtest runner.
+
+Entry conditions
+- LONG when EMA fast crosses above EMA slow and close > ema_trend.
+- SHORT when EMA fast crosses below EMA slow and close < ema_trend.
+
+Exit conditions
+- If upward cross occurs while current_side is SHORT and long filter fails, strategy returns EXIT (short exit).
+- If downward cross occurs while current_side is LONG and short filter fails, strategy returns EXIT (long exit).
+- No explicit non-cross exit in strategy logic; additional exits may come from BacktesterV2 stop/take-profit.
+
+Risk and position management (SL/TP/ATR/trailing/pyramiding/position sizing)
+- Percent stop_loss_pct and optional take_profit_pct passed to BacktesterV2.
+- Optional ATR-based stops/take-profits when atr_period and multipliers are set.
+- No custom trailing-stop logic in this strategy backtest.
+- Pyramiding supported by BacktesterV2 (default 1).
+- Position sizing by BacktesterV2 mode and optional position_pct.
+
+Outputs (trades, stats, plots, reports)
+- clean_stats from bt.stats().
+- Equity curve PNG under static/backtests/ema_cross/<run_id>/.
+- Trades CSV with run metadata.
+- QuantStats report when enabled.
+- Optional plot_trades_by_date and plot_trades outputs.
+
+Known ambiguities or inconsistencies in the code
+- Loop starts at ema_slow + 1, but check_signal enforces max(ema_slow, 200) + 1 bars; with slow < 200 this causes a long no-signal warmup period.
+- backtest_ema_cross_v2 precomputes ema_fast/ema_slow columns, then check_signal recomputes them on each slice.
+- Live runner uses config.POSITION_SIZE but does not pass that value anywhere in current signal handling.

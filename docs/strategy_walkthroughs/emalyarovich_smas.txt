@@ -1,0 +1,53 @@
+Strategy name
+emalyarovich_smas
+
+Files reviewed
+- src/strategies/emalyarovich_smas/strategy.py
+- src/strategies/emalyarovich_smas/backtest_emalyarovich_smas_v2.py
+
+Step-by-step execution flow
+1) Backtest fetches OHLCV and exits if data is empty.
+2) compute_smas adds sma_fast and sma_slow columns.
+3) BacktesterV2 is initialized with fees, slippage, direction, stop settings, pyramiding, and sizing.
+4) Loop starts after max(sma_fast, sma_slow, slope_bars) + 1.
+5) bt.on_bar runs first each bar.
+6) check_signal evaluates a pullback-to-fast-SMA long setup plus slope condition.
+7) Signal is executed with bt.on_signal at current close.
+8) Backtest produces stats, equity curve image, optional report, and CSV export.
+
+Parameters and defaults
+- Strategy-specific: sma_fast=20, sma_slow=200, slope_bars=3.
+- Execution and cost: initial_balance=1000.0, commission_pct=0.001, slippage_pct=0.001.
+- Position controls: position_mode="all_in", trade_size=100.0, position_pct=None, pyramiding=1.
+- Direction and risk: allow_short=False, stop_loss_pct=0.02, take_profit_pct=0.03.
+
+Indicators/calculations
+- sma_fast = rolling mean(close, sma_fast).
+- sma_slow = rolling mean(close, sma_slow).
+- Positive-slope helper checks that sma_fast increases for slope_bars consecutive steps.
+
+Entry conditions
+- LONG when all are true on the latest bar:
+  - close > sma_slow
+  - low <= sma_fast (price touches/undercuts fast SMA intrabar)
+  - close > sma_fast
+  - sma_fast slope is positive across slope_bars.
+
+Exit conditions
+- EXIT long when current_side is LONG and close < sma_fast.
+
+Risk and position management (SL/TP/ATR/trailing/pyramiding/position sizing)
+- Uses percent stop_loss_pct and take_profit_pct in BacktesterV2.
+- No ATR or trailing-stop logic in this strategy runner.
+- Pyramiding available via BacktesterV2 (default 1).
+- Position sizing by BacktesterV2 mode and optional position_pct.
+
+Outputs (trades, stats, plots, reports)
+- clean_stats from bt.stats().
+- Equity curve PNG under static/backtests/emalyarovich_smas/<run_id>/.
+- Trades CSV with metadata including slope_bars.
+- QuantStats report when enabled.
+
+Known ambiguities or inconsistencies in the code
+- Signal function may emit LONG repeatedly while setup persists; add/ignore behavior depends on BacktesterV2 pyramiding checks.
+- CSV metadata stores SMA periods in ema_fast/ema_slow fields, which is a naming mismatch.
