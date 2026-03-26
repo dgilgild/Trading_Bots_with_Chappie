@@ -1,0 +1,46 @@
+Strategy Test Coverage Matrix
+
+Legend
+- YES: Strategy is validated by that test type.
+- PARTIAL: Validation exists but not full strategy behavior (for example, helper/indicator only).
+
+| Strategy                 | Signal/Indicator Unit Test                          | Backtest Smoke | Backtest Regression |
+|--------------------------|------------------------------------------------------|----------------|---------------------|
+| ema_cross                | YES (LONG/SHORT/EXIT signal paths)                 | YES            | YES                 |
+| rsi_reversion            | YES (LONG/EXIT thresholds)                         | YES            | YES                 |
+| donchian_breakout        | YES (breakout LONG condition)                      | YES            | YES (expects 0 trades baseline) |
+| ema_trend_hold           | YES (LONG/EXIT around trend EMA)                   | YES            | YES                 |
+| bmsb                     | PARTIAL (indicator columns + tensignal shape)      | YES            | YES                 |
+| emalyarovich_smas        | YES (pullback + slope LONG condition)              | YES            | YES                 |
+| k_davey_mom_keltner      | PARTIAL (keltner stochastic + dynamic size bounds) | YES            | YES                 |
+| basic_keltner_reversion  | PARTIAL (signal set validity only)                 | YES            | YES                 |
+
+Per test function mapping
+
+Unit/indicator tests (8 test functions)
+- test_ema_cross_signal_logic -> ema_cross
+- test_rsi_reversion_signal_logic -> rsi_reversion
+- test_donchian_breakout_signal_logic -> donchian_breakout
+- test_ema_trend_hold_signal_logic -> ema_trend_hold
+- test_bmsb_indicator_logic -> bmsb
+- test_emalyarovich_smas_signal_logic -> emalyarovich_smas
+- test_k_davey_mom_keltner_indicator_and_size_logic -> k_davey_mom_keltner
+- test_basic_keltner_reversion_signal_set -> basic_keltner_reversion
+
+Cross-strategy tests (2 test functions)
+- test_backtest_smoke -> loops all 8 strategies
+- test_backtest_regression -> loops all 8 strategies with deterministic baselines
+
+What regression specifically verifies per strategy
+- Total trades count equals expected baseline.
+- Total Net Profit equals expected baseline within tolerance (1e-3).
+- CSV exists when trades > 0 (or absent when expected 0 trades).
+- CSV rows count equals expected trade count.
+- Trigger text patterns in first entry and last exit match expected substrings.
+
+Current known depth limitations
+- bmsb and k_davey unit tests focus on helper/indicator behavior, while full strategy behavior is primarily covered by smoke/regression loops.
+- basic_keltner unit test validates output signal set but not exact entry/exit sequence logic.
+
+Recommendation
+- Keep this matrix updated whenever adding new strategies or changing test scope.

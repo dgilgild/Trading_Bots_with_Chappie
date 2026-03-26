@@ -17,6 +17,19 @@ How to run
 2) Run self-tests
    PYTHONPATH=. python3 scripts/test_strategies_selftest.py
 
+2b) Run pytest suite and export CSV in one command
+   PYTHONPATH=. python3 scripts/run_strategy_tests_and_export_csv.py
+
+   Output files:
+   - docs/test_reports/strategies_pytest_results.xml
+   - docs/test_reports/strategies_pytest_results.csv
+   - docs/test_reports/history/strategies_pytest_results_<UTC_TIMESTAMP>.xml
+   - docs/test_reports/history/strategies_pytest_results_<UTC_TIMESTAMP>.csv
+
+   Notes:
+   - The non-history files are always overwritten with the latest run.
+   - Timestamped copies are preserved in docs/test_reports/history.
+
 3) Read results
    - PASS means behavior matches expected baseline.
    - FAIL means behavior changed or broke.

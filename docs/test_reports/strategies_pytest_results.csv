@@ -1,0 +1,11 @@
+run_timestamp_utc,suite_name,test_class,test_name,status,duration_sec,message,detail,total_tests,passed,failed,errors,skipped,total_duration_sec
+2026-03-25T14:35:28Z,pytest,tests.strategies.test_backtest_regression,test_backtest_regression,passed,3.624,,,10,10,0,0,0,7.265
+2026-03-25T14:35:28Z,pytest,tests.strategies.test_backtest_smoke,test_backtest_smoke,passed,3.545,,,10,10,0,0,0,7.265
+2026-03-25T14:35:28Z,pytest,tests.strategies.test_signal_logic,test_ema_cross_signal_logic,passed,0.007,,,10,10,0,0,0,7.265
+2026-03-25T14:35:28Z,pytest,tests.strategies.test_signal_logic,test_rsi_reversion_signal_logic,passed,0.001,,,10,10,0,0,0,7.265
+2026-03-25T14:35:28Z,pytest,tests.strategies.test_signal_logic,test_donchian_breakout_signal_logic,passed,0.002,,,10,10,0,0,0,7.265
+2026-03-25T14:35:28Z,pytest,tests.strategies.test_signal_logic,test_ema_trend_hold_signal_logic,passed,0.001,,,10,10,0,0,0,7.265
+2026-03-25T14:35:28Z,pytest,tests.strategies.test_signal_logic,test_bmsb_indicator_logic,passed,0.014,,,10,10,0,0,0,7.265
+2026-03-25T14:35:28Z,pytest,tests.strategies.test_signal_logic,test_emalyarovich_smas_signal_logic,passed,0.003,,,10,10,0,0,0,7.265
+2026-03-25T14:35:28Z,pytest,tests.strategies.test_signal_logic,test_k_davey_mom_keltner_indicator_and_size_logic,passed,0.015,,,10,10,0,0,0,7.265
+2026-03-25T14:35:28Z,pytest,tests.strategies.test_signal_logic,test_basic_keltner_reversion_signal_set,passed,0.012,,,10,10,0,0,0,7.265

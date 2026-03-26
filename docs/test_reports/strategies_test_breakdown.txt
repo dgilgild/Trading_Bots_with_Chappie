@@ -1,0 +1,127 @@
+Strategy Test Breakdown (what exactly passed)
+
+Context
+- Command executed: PYTHONPATH=. pytest tests/strategies -q
+- Result seen: 10 passed
+- Why only "10"? Because pytest counted test functions, not per-strategy loop iterations.
+
+Important concept
+- Some tests iterate through all strategies inside ONE test function.
+- So a single "PASS" line can still validate all 8 strategies.
+
+Files and test functions
+
+1) tests/strategies/test_signal_logic.py
+   Contains 8 unit-style test functions:
+
+   a) test_ema_cross_signal_logic
+      - Validates EMA Cross returns LONG on bullish cross + trend filter.
+      - Validates SHORT on bearish cross + trend filter.
+      - Validates EXIT for short on opposite cross path.
+
+   b) test_rsi_reversion_signal_logic
+      - Validates LONG when RSI < entry threshold.
+      - Validates EXIT when RSI > exit threshold while in LONG.
+
+   c) test_donchian_breakout_signal_logic
+      - Validates LONG when close breaks above Donchian high.
+
+   d) test_ema_trend_hold_signal_logic
+      - Validates LONG when price > trend EMA.
+      - Validates EXIT when price < trend EMA while in LONG.
+
+   e) test_bmsb_indicator_logic
+      - Validates BMSB indicator column exists.
+      - Validates tensignal output length matches input length.
+
+   f) test_emalyarovich_smas_signal_logic
+      - Validates LONG on pullback + positive slope setup.
+
+   g) test_k_davey_mom_keltner_indicator_and_size_logic
+      - Validates Keltner stochastic output shape/non-empty after warmup.
+      - Validates dynamic contract size stays in expected bounds.
+
+   h) test_basic_keltner_reversion_signal_set
+      - Validates signal is from accepted set: LONG/SHORT/EXIT/None.
+
+2) tests/strategies/test_backtest_smoke.py
+   Contains 1 smoke test function:
+
+   test_backtest_smoke
+   - Iterates ALL 8 strategies via conftest backtest_jobs.
+   - Monkeypatches fetch_ohlcv with deterministic synthetic OHLCV.
+   - For each strategy runner, validates:
+     - returned stats is dict
+     - chart_path is None when generate_equity=False
+     - csv_path is None or string
+
+3) tests/strategies/test_backtest_regression.py
+   Contains 1 regression test function:
+
+   test_backtest_regression
+   - Iterates ALL 8 strategies via conftest backtest_jobs.
+   - Uses deterministic synthetic OHLCV + fixed expected baselines.
+   - For each strategy, validates:
+     - expected trade count
+     - expected total net profit (abs tolerance 1e-3)
+     - CSV presence (except expected zero-trade strategy)
+     - CSV row count equals expected trades
+     - entry/exit trigger substring expectations
+
+How this maps to "10 passed"
+- 8 passes from signal test file
+- 1 pass from smoke test file
+- 1 pass from regression test file
+- Total = 10 passed
+
+Per-strategy coverage summary
+- ema_cross:
+  - direct signal logic test
+  - included in smoke loop
+  - included in regression loop
+
+- rsi_reversion:
+  - direct signal logic test
+  - included in smoke loop
+  - included in regression loop
+
+- donchian_breakout:
+  - direct signal logic test
+  - included in smoke loop
+  - included in regression loop (expects zero trades on baseline)
+
+- ema_trend_hold:
+  - direct signal logic test
+  - included in smoke loop
+  - included in regression loop
+
+- bmsb:
+  - indicator logic test
+  - included in smoke loop
+  - included in regression loop
+
+- emalyarovich_smas:
+  - direct signal logic test
+  - included in smoke loop
+  - included in regression loop
+
+- k_davey_mom_keltner:
+  - indicator + sizing logic test
+  - included in smoke loop
+  - included in regression loop
+
+- basic_keltner_reversion:
+  - signal set test
+  - included in smoke loop
+  - included in regression loop
+
+How to see test names instead of dots
+- Use verbose mode:
+  PYTHONPATH=. pytest tests/strategies -v
+
+Where to inspect stored run output
+- XML: docs/test_reports/strategies_pytest_results.xml
+- CSV: docs/test_reports/strategies_pytest_results.csv
+- Timestamp history:
+  docs/test_reports/history/strategies_pytest_results_<UTC_TIMESTAMP>.xml
+  docs/test_reports/history/strategies_pytest_results_<UTC_TIMESTAMP>.csv

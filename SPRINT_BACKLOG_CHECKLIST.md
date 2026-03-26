@@ -3,9 +3,10 @@
 Use this file as the sprint control board. Create one GitHub issue per story ID.
 
 ## Epic A - Test Harness Formalization
-- [ ] ST-101 Create pytest structure for strategy tests
+- [x] ST-101 Create pytest structure for strategy tests
 - [ ] ST-102 Add test markers and selective runs
 - [ ] ST-103 Keep compatibility wrapper script
+- [ ] ST-104 Add explicit BMSB signal unit tests (entry, exit, trailing)
 
 ## Epic B - Baseline Data and Contracts
 - [ ] ST-201 Freeze deterministic synthetic dataset contract
@@ -26,9 +27,10 @@ Use this file as the sprint control board. Create one GitHub issue per story ID.
 2. ST-101
 3. ST-102
 4. ST-202
-5. ST-203
-6. ST-301
-7. ST-302
-8. ST-303
-9. ST-401
-10. ST-402
+5. ST-104
+6. ST-203
+7. ST-301
+8. ST-302
+9. ST-303
+10. ST-401
+11. ST-402

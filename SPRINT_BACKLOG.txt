@@ -54,6 +54,17 @@ Epic A - Test Harness Formalization
 - Acceptance criteria:
   - Existing workflow does not break.
 
+[ST-104] Add explicit BMSB signal unit tests (entry, exit, trailing)
+- Priority: High
+- Estimate: S
+- Deliverables:
+  - Update tests/strategies/test_signal_logic.py with BMSB signal-behavior tests
+- Acceptance criteria:
+  - Entry condition is explicitly validated (buysignal + tensignal gate).
+  - Exit condition is explicitly validated (crossunder logic).
+  - Trailing-stop update path is validated at unit/integration-test level.
+  - BMSB unit coverage is upgraded from PARTIAL to YES in matrix docs.
+
 Epic B - Baseline Data and Contracts
 
 [ST-201] Freeze deterministic synthetic dataset contract
@@ -136,7 +147,7 @@ Day 3-4
 - ST-102, ST-202
 
 Day 5
-- ST-203, stabilize tests
+- ST-104, ST-203, stabilize tests
 
 Day 6-7
 - ST-301, ST-302
