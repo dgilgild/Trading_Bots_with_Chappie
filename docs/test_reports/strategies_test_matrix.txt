@@ -10,19 +10,22 @@ Legend
 | rsi_reversion            | YES (LONG/EXIT thresholds)                         | YES            | YES                 |
 | donchian_breakout        | YES (breakout LONG condition)                      | YES            | YES (expects 0 trades baseline) |
 | ema_trend_hold           | YES (LONG/EXIT around trend EMA)                   | YES            | YES                 |
-| bmsb                     | PARTIAL (indicator columns + tensignal shape)      | YES            | YES                 |
+| bmsb                     | YES (entry gate, crossunder exit, trailing stop path) | YES         | YES                 |
 | emalyarovich_smas        | YES (pullback + slope LONG condition)              | YES            | YES                 |
 | k_davey_mom_keltner      | PARTIAL (keltner stochastic + dynamic size bounds) | YES            | YES                 |
 | basic_keltner_reversion  | PARTIAL (signal set validity only)                 | YES            | YES                 |
 
 Per test function mapping
 
-Unit/indicator tests (8 test functions)
+Unit/indicator tests (11 test functions)
 - test_ema_cross_signal_logic -> ema_cross
 - test_rsi_reversion_signal_logic -> rsi_reversion
 - test_donchian_breakout_signal_logic -> donchian_breakout
 - test_ema_trend_hold_signal_logic -> ema_trend_hold
 - test_bmsb_indicator_logic -> bmsb
+- test_bmsb_entry_requires_buysignal_and_tensignal_gate -> bmsb
+- test_bmsb_exit_uses_crossunder_logic -> bmsb
+- test_bmsb_trailing_stop_updates_and_exits_through_backtester_flow -> bmsb
 - test_emalyarovich_smas_signal_logic -> emalyarovich_smas
 - test_k_davey_mom_keltner_indicator_and_size_logic -> k_davey_mom_keltner
 - test_basic_keltner_reversion_signal_set -> basic_keltner_reversion
@@ -39,7 +42,7 @@ What regression specifically verifies per strategy
 - Trigger text patterns in first entry and last exit match expected substrings.
 
 Current known depth limitations
-- bmsb and k_davey unit tests focus on helper/indicator behavior, while full strategy behavior is primarily covered by smoke/regression loops.
+- k_davey unit tests focus on helper/indicator behavior, while full strategy behavior is primarily covered by smoke/regression loops.
 - basic_keltner unit test validates output signal set but not exact entry/exit sequence logic.
 
 Recommendation

@@ -1,0 +1,71 @@
+Phase 2 Release Prep - Trade Explainability
+
+Scope completed
+- ST-403: Expanded full deterministic explainability to additional strategies.
+- ST-404: Added explainability regression contract tests.
+- ST-405: Added run-level explainability summary artifacts.
+
+What is now available
+1) Per-trade explainability artifacts
+- Output root:
+  docs/test_reports/trade_explainability/<run_stamp>/<strategy>/
+- Per trade:
+  - trade_<NNN>.png
+  - trade_<NNN>.txt
+- Index:
+  - trade_artifacts_index.csv
+  - trade_artifacts_index.json
+
+2) Full deterministic explainability coverage
+- ema_cross
+- bmsb
+- rsi_reversion
+- donchian_breakout
+
+3) Fallback explainability mode (explicitly flagged)
+- ema_trend_hold
+- emalyarovich_smas
+- k_davey_mom_keltner
+- basic_keltner_reversion
+
+4) Accessibility and readability
+- Colorblind-friendly palette.
+- Full OHLC candle rendering.
+- Timeframe label in x-axis (from --timeframe).
+- Optional high-contrast mode with thicker lines and larger markers.
+
+5) Run-level summary artifacts
+- Generated at run root:
+  - summary_report.txt
+  - summary.json
+- Includes:
+  - run metadata
+  - strategies processed
+  - per-strategy requested/generated/fallback counts
+  - total generated trades
+  - warnings (zero-trade, all-fallback, missing artifacts)
+
+Regression protection
+- tests/core/analysis/test_trade_explainability_contracts.py
+- Covers:
+  - index file presence
+  - row-to-file mapping
+  - fallback/full-mode correctness
+  - explanation text section contract
+  - zero-trade graceful behavior
+  - run-level summary contract
+
+Recommended pre-release validation
+1) Core explainability contract tests
+   PYTHONPATH=. pytest tests/core/analysis/test_trade_explainability_contracts.py -q
+
+2) Full explainability generation smoke
+   PYTHONPATH=. python3 scripts/generate_trade_explainability.py --strategy all --rows 430 --timeframe 1d --context-bars 30 --max-trades 10 --high-contrast
+
+3) Strategy suite sanity
+   PYTHONPATH=. pytest tests/strategies -q
+
+Commit message draft (conventional commits)
+feat(explainability): add deterministic per-trade artifacts with summary reporting
+
+Introduce per-trade explainability outputs (png/txt + index csv/json), full coverage for EMA Cross/BMSB/RSI/Donchian, and run-level summary files. Add contract regression tests for artifact integrity, fallback/full-mode behavior, and zero-trade handling.

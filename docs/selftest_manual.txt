@@ -6,9 +6,9 @@ Purpose
 
 What is included
 - scripts/test_strategies_selftest.py
-  - Signal-level tests (unit-style checks for strategy conditions)
-  - Backtest smoke tests (runner executes without crashing)
-  - Backtest regression tests (golden baseline checks)
+  - Compatibility wrapper that runs pytest suite under tests/strategies
+  - Prints legacy-style summary: Total / Passed / Failed / Skipped
+  - Keeps non-zero exit code when pytest reports failures
 
 How to run
 1) Install dependencies
@@ -16,6 +16,13 @@ How to run
 
 2) Run self-tests
    PYTHONPATH=. python3 scripts/test_strategies_selftest.py
+   - Internally executes pytest tests/strategies -q with JUnit XML output.
+   - If pytest is missing, the wrapper prints install steps and exits non-zero.
+
+2a) Run pytest by marker (tests/strategies)
+   PYTHONPATH=. pytest -m unit tests/strategies -q
+   PYTHONPATH=. pytest -m smoke tests/strategies -q
+   PYTHONPATH=. pytest -m regression tests/strategies -q
 
 2b) Run pytest suite and export CSV in one command
    PYTHONPATH=. python3 scripts/run_strategy_tests_and_export_csv.py
@@ -30,6 +37,57 @@ How to run
    - The non-history files are always overwritten with the latest run.
    - Timestamped copies are preserved in docs/test_reports/history.
 
+2c) Run walk-forward evaluator (ST-402)
+    Deterministic synthetic mode:
+    PYTHONPATH=. python3 scripts/run_walk_forward.py --mode deterministic --strategy ema_cross --train-pct 50 --test-pct 25 --step-pct 25
+
+    Other strategy examples (same window policy, deterministic data):
+    PYTHONPATH=. python3 scripts/run_walk_forward.py --mode deterministic --strategy donchian_breakout --train-pct 50 --test-pct 25 --step-pct 25
+    PYTHONPATH=. python3 scripts/run_walk_forward.py --mode deterministic --strategy k_davey_mom_keltner --train-pct 50 --test-pct 25 --step-pct 25
+    PYTHONPATH=. python3 scripts/run_walk_forward.py --mode deterministic --strategy basic_keltner_reversion --train-pct 50 --test-pct 25 --step-pct 25
+
+    Supported strategies:
+    - ema_cross
+    - rsi_reversion
+    - donchian_breakout
+    - ema_trend_hold
+    - bmsb
+    - emalyarovich_smas
+    - k_davey_mom_keltner
+    - basic_keltner_reversion
+
+    DB mode example:
+    PYTHONPATH=. python3 scripts/run_walk_forward.py --mode db --strategy ema_cross --exchange binance --symbol BTC/USDT --timeframe 1d --start-date 2021-01-01 --end-date 2022-12-31 --train-pct 50 --test-pct 25 --step-pct 25
+
+   Output files are written to:
+   - docs/test_reports/walk_forward/<run_stamp>/walk_forward_windows.csv
+   - docs/test_reports/walk_forward/<run_stamp>/walk_forward_summary.json
+
+2d) Generate deterministic trade explainability artifacts
+   EMA Cross:
+   PYTHONPATH=. python3 scripts/generate_trade_explainability.py --strategy ema_cross --rows 430 --context-bars 30 --max-trades 20
+   PYTHONPATH=. python3 scripts/generate_trade_explainability.py --strategy ema_cross --rows 430 --context-bars 30 --max-trades 20 --high-contrast
+
+   BMSB:
+   PYTHONPATH=. python3 scripts/generate_trade_explainability.py --strategy bmsb --rows 430 --context-bars 30 --max-trades 20
+
+   All supported strategies:
+   PYTHONPATH=. python3 scripts/generate_trade_explainability.py --strategy all --rows 430 --context-bars 30 --max-trades 50
+
+    Output root per run:
+    - docs/test_reports/trade_explainability/<run_stamp>/<strategy>/
+    - docs/test_reports/trade_explainability/<run_stamp>/summary_report.txt
+    - docs/test_reports/trade_explainability/<run_stamp>/summary.json
+
+   Per strategy outputs:
+   - trade_<NNN>.png (price-focused chart around entry/exit with markers)
+   - trade_<NNN>.txt (entry/exit explanation with indicators and condition checks)
+   - trade_artifacts_index.csv
+   - trade_artifacts_index.json
+
+   Deterministic source of truth:
+   - src/core/testing/synthetic_data.py (make_synthetic_ohlcv_v1)
+
 3) Read results
    - PASS means behavior matches expected baseline.
    - FAIL means behavior changed or broke.
@@ -40,14 +98,19 @@ Test groups explained
 
 2) backtest_smoke
    - Monkeypatches fetch_ohlcv with deterministic synthetic data.
+   - Canonical source: src/core/testing/synthetic_data.py (make_synthetic_ohlcv_v1).
    - Ensures each run_backtest_* function returns expected output shape.
 
 3) backtest_regression
    - Uses deterministic synthetic data and fixed parameters.
+   - Validates generated trade CSV schema via src/core/testing/contracts.py.
+   - Enforces timeline integrity in trade CSVs:
+      - entry_time <= exit_time for each trade row
+      - exit_time ordering is monotonically non-decreasing (strict by default)
    - Confirms per strategy:
-     - total trade count
-     - total net PnL (tolerance 1e-3)
-     - first/last trigger text patterns in CSV
+      - total trade count
+      - total net PnL (tolerance 1e-3)
+      - first/last trigger text patterns in CSV
 
 When to run
 - Before committing changes to any strategy or backtester code.
@@ -66,8 +129,8 @@ How to interpret failures
 
 Updating baselines intentionally
 - If behavior changed by design, update expected values in:
-  scripts/test_strategies_selftest.py
-  inside test_backtest_regression() expected dictionary.
+  tests/strategies/conftest.py
+  inside the regression_expected fixture dictionary.
 
 Recommended workflow
 1) Make strategy change.
@@ -79,3 +142,68 @@ Recommended workflow
 Optional report generation
 - To generate strategy PDFs and baseline CSV visuals, run:
   PYTHONPATH=. python3 scripts/generate_strategy_pdfs.py
+
+  This command also regenerates deterministic comparison artifacts:
+  - docs/strategy_walkthroughs/metrics/strategy_comparison.json
+  - docs/strategy_walkthroughs/metrics/strategy_comparison_report.txt
+
+  Notes:
+  - The JSON is the source of truth for cross-strategy metrics.
+  - The text report is rendered from the JSON (no separate metric math path).
+
+Walk-forward evaluation (ST-401/ST-402)
+- Deterministic mode example (EMA Cross):
+  PYTHONPATH=. python3 scripts/run_walk_forward.py --mode deterministic --strategy ema_cross --train-pct 50 --test-pct 25 --step-pct 25
+
+- Deterministic mode example (other strategies):
+  PYTHONPATH=. python3 scripts/run_walk_forward.py --mode deterministic --strategy donchian_breakout --train-pct 50 --test-pct 25 --step-pct 25
+  PYTHONPATH=. python3 scripts/run_walk_forward.py --mode deterministic --strategy k_davey_mom_keltner --train-pct 50 --test-pct 25 --step-pct 25
+
+- DB mode example:
+  PYTHONPATH=. python3 scripts/run_walk_forward.py --mode db --strategy ema_cross --exchange binance --symbol BTC/USDT --timeframe 1d --start-date 2020-01-01 --end-date 2025-01-01 --train-pct 50 --test-pct 25 --step-pct 25
+
+- Outputs per run:
+  - docs/test_reports/walk_forward/<run_stamp>/walk_forward_windows.csv
+  - docs/test_reports/walk_forward/<run_stamp>/walk_forward_summary.json
+
+- Supported strategies:
+  - ema_cross
+  - rsi_reversion
+  - donchian_breakout
+  - ema_trend_hold
+  - bmsb
+  - emalyarovich_smas
+  - k_davey_mom_keltner
+  - basic_keltner_reversion
+
+Deterministic trade explainability artifacts
+- Generate per-trade graphics + text explanations:
+  PYTHONPATH=. python3 scripts/generate_trade_explainability.py --strategy ema_cross --rows 430 --timeframe 1d --context-bars 30 --max-trades 20
+  PYTHONPATH=. python3 scripts/generate_trade_explainability.py --strategy bmsb --rows 430 --timeframe 1d --context-bars 30 --max-trades 20
+
+- Output root:
+  - docs/test_reports/trade_explainability/<run_stamp>/<strategy>/
+  - docs/test_reports/trade_explainability/<run_stamp>/summary_report.txt
+  - docs/test_reports/trade_explainability/<run_stamp>/summary.json
+
+- Artifacts per trade:
+  - trade_<NNN>.png
+  - trade_<NNN>.txt
+
+- Chart notes:
+  - PNG now renders full OHLC candles.
+  - X-axis label includes timeframe provided via --timeframe.
+  - Optional `--high-contrast` mode increases readability with thicker lines, larger entry/exit markers,
+    and stronger candle body edge contrast. Default plotting remains unchanged.
+
+- Index files:
+  - trade_artifacts_index.csv
+  - trade_artifacts_index.json
+
+- Run summary files:
+  - summary_report.txt
+  - summary.json
+
+- Coverage notes:
+  - Full explainability (indicator values + explicit condition checks): ema_cross, bmsb
+  - Fallback mode (trigger/price-first, best-effort indicators): other strategies

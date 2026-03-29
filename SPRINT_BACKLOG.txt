@@ -138,6 +138,39 @@ Epic D - Walk-Forward Validation (First Slice)
   - Handles all 8 strategies.
   - Graceful handling for zero-trade windows.
 
+Epic E - Trade Explainability (Phase 2)
+
+[ST-403] Expand full explainability to additional strategies
+- Priority: Medium
+- Estimate: M
+- Deliverables:
+  - Extend full per-trade explainability (indicator snapshots + explicit condition checks)
+    beyond ema_cross and bmsb for at least 2 additional strategies.
+- Acceptance criteria:
+  - At least 2 additional strategies produce non-fallback trade explanations.
+  - Per-trade text includes entry/exit indicator values and MET/NOT_MET condition checks.
+  - Existing ema_cross/bmsb explainability remains unchanged and passing.
+
+[ST-404] Add explainability regression contract tests
+- Priority: Medium
+- Estimate: M
+- Deliverables:
+  - Tests validating explainability artifacts contract (png/txt/index csv/json) for deterministic runs.
+- Acceptance criteria:
+  - Deterministic generation for target strategies produces required artifact set.
+  - Index files accurately map generated trade files.
+  - Fallback vs full-mode flags are validated by tests.
+
+[ST-405] Build explainability summary index report
+- Priority: Low
+- Estimate: S
+- Deliverables:
+  - Run-level summary report under docs/test_reports/trade_explainability/<run_stamp>/
+    with per-strategy counts and key quality flags.
+- Acceptance criteria:
+  - Report generated automatically by explainability script.
+  - Includes strategies covered, generated trade count, fallback/full counts, and missing-artifact warnings.
+
 Suggested day-by-day plan
 
 Day 1-2
@@ -157,6 +190,9 @@ Day 8
 
 Day 9-10
 - ST-401 first pass, ST-402 partial, docs updates
+
+Phase 2 follow-up
+- ST-403, ST-404, ST-405
 
 Risks and mitigations
 - Risk: brittle regression values after intentional logic changes.

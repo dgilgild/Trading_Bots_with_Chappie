@@ -1,0 +1,68 @@
+Trade Explainability Artifacts
+
+Purpose
+- Generate deterministic per-trade explainability artifacts for testing and reviews.
+- Keep a stable source of truth by using synthetic OHLCV data.
+
+Command
+- PYTHONPATH=. python3 scripts/generate_trade_explainability.py --strategy <strategy|all> --rows 430 --timeframe 1d --context-bars 30 --max-trades 50
+- Optional readability mode: add `--high-contrast` to increase visual separation in charts.
+
+Deterministic source of truth
+- src/core/testing/synthetic_data.make_synthetic_ohlcv_v1
+
+Output layout
+- docs/test_reports/trade_explainability/<run_stamp>/<strategy>/
+- Run-level summary files are written at:
+  - docs/test_reports/trade_explainability/<run_stamp>/summary_report.txt
+  - docs/test_reports/trade_explainability/<run_stamp>/summary.json
+
+Per-trade files
+- trade_<NNN>.png
+  - Window around the trade using --context-bars.
+  - Full OHLC candles (wick + body) with entry/exit markers and price context.
+  - X-axis label includes timeframe from --timeframe (for example: 1d, 4h, 1h).
+  - Uses a colorblind-friendly palette (Okabe-Ito style tones) and distinct marker shapes.
+  - In `--high-contrast` mode: thicker lines, larger markers, stronger candle body edges,
+    and mixed line styles for overlays.
+  - Includes strategy overlays for ema_cross, bmsb, rsi_reversion (separate RSI axis),
+    and donchian_breakout.
+
+- trade_<NNN>.txt
+  - Entry/exit prices and timestamps.
+  - Entry/exit trigger text.
+  - Indicator values at entry and exit.
+  - Explicit condition checks with MET / NOT_MET markers.
+
+Index files
+- trade_artifacts_index.csv
+  - One row per generated trade artifact pair.
+- trade_artifacts_index.json
+  - Same index data plus run metadata and counts.
+
+Run summary files
+- summary_report.txt
+  - Human-readable run-level index for all processed strategies.
+  - Includes run metadata, strategy list, per-strategy counts, total generated trades,
+    and warnings for missing/zero artifacts when applicable.
+- summary.json
+  - Machine-readable run-level summary payload with the same fields as the text report.
+
+Strategy coverage
+- Full deterministic explainability
+  - ema_cross
+  - bmsb
+  - rsi_reversion
+  - donchian_breakout
+
+- Fallback mode
+  - Any other supported strategy not listed above.
+  - Includes price/trigger details and best-effort indicators when available.
+  - Explicitly marked as fallback mode in both text and index output.
+
+Zero-trade behavior
+- If no closed trades are present, no per-trade png/txt files are created.
+- Empty index files are still generated with metadata and zero counts.
+
+Contract test coverage
+- Artifact contracts are regression-tested in `tests/core/analysis/test_trade_explainability_contracts.py`.

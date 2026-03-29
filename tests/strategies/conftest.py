@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import Callable
 
-import numpy as np
 import pandas as pd
 import pytest
 
+from src.core.testing.synthetic_data import make_synthetic_ohlcv_v1
 import src.strategies.basic_keltner_reversion.backtest_basic_keltner_reversion_v2 as bk_runner
 import src.strategies.bmsb.backtest_bmsb_v2 as bmsb_runner
 import src.strategies.donchian_breakout.backtest_donchian_breakout_v2 as don_runner
@@ -17,26 +17,7 @@ import src.strategies.rsi_reversion.backtest_rsi_reversion_v2 as rsi_runner
 
 
 def make_synthetic_ohlcv(rows: int = 420, freq: str = "D") -> pd.DataFrame:
-    idx = pd.date_range("2021-01-01", periods=rows, freq=freq)
-    x = np.arange(rows, dtype=float)
-    trend = 100.0 + 0.05 * x
-    wave = 2.5 * np.sin(x / 6.0) + 1.0 * np.cos(x / 17.0)
-    close = trend + wave
-    open_ = close + 0.2 * np.sin(x / 3.0)
-    high = np.maximum(open_, close) + 0.6
-    low = np.minimum(open_, close) - 0.6
-    volume = np.full(rows, 1000.0)
-
-    return pd.DataFrame(
-        {
-            "timestamp": idx,
-            "open": open_,
-            "high": high,
-            "low": low,
-            "close": close,
-            "volume": volume,
-        }
-    )
+    return make_synthetic_ohlcv_v1(rows=rows, freq=freq)
 
 
 @pytest.fixture(scope="session")

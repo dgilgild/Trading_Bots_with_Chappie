@@ -3,7 +3,11 @@ from __future__ import annotations
 import math
 from pathlib import Path
 
-import pandas as pd
+import pytest
+
+from src.core.testing.contracts import validate_trade_csv_contract_path
+
+pytestmark = pytest.mark.regression
 
 
 def test_backtest_regression(backtest_jobs, synthetic_ohlcv, regression_expected, monkeypatch) -> None:
@@ -38,7 +42,11 @@ def test_backtest_regression(backtest_jobs, synthetic_ohlcv, regression_expected
         csv_abs_path = Path(kwargs["base_path"]) / "static" / csv_rel_path
         assert csv_abs_path.exists(), f"{strategy_name}: CSV file missing on disk"
 
-        trades_df = pd.read_csv(csv_abs_path)
+        trades_df = validate_trade_csv_contract_path(
+            csv_abs_path,
+            context=f"{strategy_name} trade CSV '{csv_abs_path.name}'",
+            validate_exit_time_monotonic=True,
+        )
         assert len(trades_df) == expected_trades, f"{strategy_name}: CSV rows mismatch expected trades"
 
         first_trigger = str(trades_df.iloc[0]["entry_trigger"])

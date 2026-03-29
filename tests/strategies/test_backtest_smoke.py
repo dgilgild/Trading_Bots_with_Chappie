@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import pytest
+
+pytestmark = pytest.mark.smoke
+
 
 def test_backtest_smoke(backtest_jobs, synthetic_ohlcv, monkeypatch) -> None:
     def fake_fetch(**_kwargs):

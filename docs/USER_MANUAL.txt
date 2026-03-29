@@ -1,0 +1,283 @@
+Trading Bots with Chappie - Beginner User Manual
+
+Audience
+- This guide is for non-expert users who want to run backtests and read outputs without touching strategy code.
+
+=======================================================================
+What this system does
+=======================================================================
+- Runs trading strategy backtests from a web UI.
+- Uses OHLCV market data stored in a local SQLite DB (`data/market_data.db`).
+- Saves run history, stats, CSV trade logs, equity charts, and HTML reports.
+- Includes script-based self-tests, walk-forward analysis, and per-trade explainability artifacts.
+
+Supported strategies
+- ema_cross
+- rsi_reversion
+- donchian_breakout
+- ema_trend_hold
+- bmsb
+- emalyarovich_smas
+- k_davey_mom_keltner
+- basic_keltner_reversion
+
+=======================================================================
+Quick start (install, DB init, run web app)
+=======================================================================
+1) Open a terminal in the project root:
+   /home/daniel/Python_Code/Trading_Bots_with_Chappie
+
+2) Install dependencies:
+   python3 -m pip install -r requirements.txt
+
+3) Initialize the database:
+   PYTHONPATH=. python3 scripts/init_db.py
+
+4) Start the web app:
+   PYTHONPATH=. python3 web/app.py
+
+5) Open in browser:
+   http://127.0.0.1:5000
+
+Notes
+- Keep the terminal running while you use the UI.
+- If you stop the app, press Ctrl+C.
+
+=======================================================================
+Run a backtest from UI (step-by-step)
+=======================================================================
+1) Start the app (quick start above) and open http://127.0.0.1:5000.
+2) In "Run Backtest", set:
+   - Strategy (example: EMA Cross)
+   - Data Source (recommended: ohlcv_clean)
+   - Exchange (example: binance)
+   - Symbol (example: BTC/USDT)
+   - Timeframe (example: 15m or 1d)
+   - Start Date / End Date (YYYY-MM-DD)
+3) Keep defaults for first run:
+   - Commission 0.1
+   - Slippage 0.1
+   - Position Size 3
+   - TP/SL enabled
+4) Click "Run Backtest".
+5) On results page, review:
+   - Stats block (performance metrics)
+   - Params block (exact inputs used)
+   - Links for CSV, Equity Chart, QuantStats Report
+   - Trades Graphs windows with Previous/Next navigation
+6) To revisit later, open:
+   http://127.0.0.1:5000/history
+
+Practical first-run setup
+- For easiest first success, use `binance` + `BTC/USDT` + `15m` or `1d`.
+
+=======================================================================
+Understand output files
+=======================================================================
+Backtest run outputs (from UI)
+- Root pattern:
+  web/static/backtests/<strategy>/<run_id>/
+- Typical files:
+  - `<run_id>_trades.csv` : trade-by-trade execution log
+  - `equity_curve_<run_id>.png` : equity curve image
+  - `quantstats_report.html` : full performance report (or fallback HTML summary)
+  - `trades_windows/` : candlestick windows with entry/exit markers
+
+Self-test reports
+- `docs/test_reports/strategies_pytest_results.xml`
+- `docs/test_reports/strategies_pytest_results.csv`
+- `docs/test_reports/history/strategies_pytest_results_<timestamp>.xml`
+- `docs/test_reports/history/strategies_pytest_results_<timestamp>.csv`
+
+Walk-forward outputs
+- `docs/test_reports/walk_forward/<run_stamp>/walk_forward_windows.csv`
+- `docs/test_reports/walk_forward/<run_stamp>/walk_forward_summary.json`
+
+Explainability artifacts
+- Root per run:
+  `docs/test_reports/trade_explainability/<run_stamp>/`
+- Per strategy folder:
+  - `trade_001.png`, `trade_002.png`, ...
+  - `trade_001.txt`, `trade_002.txt`, ...
+  - `trade_artifacts_index.csv`
+  - `trade_artifacts_index.json`
+- Run-level summary:
+  - `summary_report.txt`
+  - `summary.json`
+
+PDF docs and deterministic baseline artifacts
+- Generate command creates/refreshes:
+  - `docs/strategy_walkthroughs/pdfs/*.pdf`
+  - `docs/strategy_walkthroughs/csv_baselines/*.csv`
+  - `docs/strategy_walkthroughs/metrics/strategy_comparison.json`
+  - `docs/strategy_walkthroughs/metrics/strategy_comparison_report.txt`
+
+=======================================================================
+Strategy self-tests (single command and report outputs)
+=======================================================================
+Recommended one-command run (pytest + CSV export):
+PYTHONPATH=. python3 scripts/run_strategy_tests_and_export_csv.py
+
+What it does
+- Runs `pytest tests/strategies -q` with JUnit XML output.
+- Converts XML to CSV.
+- Saves timestamped history copies.
+
+Main report files
+- `docs/test_reports/strategies_pytest_results.xml`
+- `docs/test_reports/strategies_pytest_results.csv`
+- `docs/test_reports/history/strategies_pytest_results_<UTC_TIMESTAMP>.xml`
+- `docs/test_reports/history/strategies_pytest_results_<UTC_TIMESTAMP>.csv`
+
+Compatibility command (legacy-style summary in terminal):
+PYTHONPATH=. python3 scripts/test_strategies_selftest.py
+
+=======================================================================
+Walk-forward usage (deterministic + DB mode)
+=======================================================================
+Deterministic mode (reproducible synthetic data):
+PYTHONPATH=. python3 scripts/run_walk_forward.py --mode deterministic --strategy ema_cross --train-pct 50 --test-pct 25 --step-pct 25
+
+Deterministic mode (other strategy example):
+PYTHONPATH=. python3 scripts/run_walk_forward.py --mode deterministic --strategy donchian_breakout --train-pct 50 --test-pct 25 --step-pct 25
+
+DB mode (real data from local DB):
+PYTHONPATH=. python3 scripts/run_walk_forward.py --mode db --strategy ema_cross --exchange binance --symbol BTC/USDT --timeframe 1d --start-date 2021-01-01 --end-date 2022-12-31 --train-pct 50 --test-pct 25 --step-pct 25
+
+Outputs
+- `docs/test_reports/walk_forward/<run_stamp>/walk_forward_windows.csv`
+- `docs/test_reports/walk_forward/<run_stamp>/walk_forward_summary.json`
+
+Interpretation tips
+- `walk_forward_windows.csv` = one row per window with trades, net profit, PF, drawdown.
+- `walk_forward_summary.json` = aggregate totals and averages across windows.
+
+=======================================================================
+Explainability generation (normal + high-contrast)
+=======================================================================
+Normal mode (EMA Cross):
+PYTHONPATH=. python3 scripts/generate_trade_explainability.py --strategy ema_cross --rows 430 --context-bars 30 --max-trades 20
+
+High-contrast mode (EMA Cross):
+PYTHONPATH=. python3 scripts/generate_trade_explainability.py --strategy ema_cross --rows 430 --context-bars 30 --max-trades 20 --high-contrast
+
+All strategies in one run:
+PYTHONPATH=. python3 scripts/generate_trade_explainability.py --strategy all --rows 430 --context-bars 30 --max-trades 50
+
+Result location
+- `docs/test_reports/trade_explainability/<run_stamp>/...`
+
+Important note on explainability coverage
+- Full deterministic condition reconstruction: `ema_cross`, `bmsb`, `rsi_reversion`, `donchian_breakout`
+- Fallback mode (trigger/price-first, best-effort indicators): other strategies
+
+=======================================================================
+Troubleshooting (common failures and exact fixes)
+=======================================================================
+1) Error: ModuleNotFoundError: No module named 'src'
+Fix:
+- Run commands from project root.
+- Prefix command with PYTHONPATH.
+  Example: `PYTHONPATH=. python3 scripts/run_walk_forward.py --mode deterministic --strategy ema_cross --train-pct 50 --test-pct 25 --step-pct 25`
+
+2) Error: pytest is not installed in this environment
+Fix:
+- Install pytest, then rerun.
+  - `python3 -m pip install pytest`
+  - `PYTHONPATH=. python3 scripts/test_strategies_selftest.py`
+
+3) Error: No OHLCV data available for walk-forward run
+Fix:
+- Use deterministic mode first to validate your environment.
+  - `PYTHONPATH=. python3 scripts/run_walk_forward.py --mode deterministic --strategy ema_cross --train-pct 50 --test-pct 25 --step-pct 25`
+- For DB mode, verify exchange/symbol/timeframe/date range exists in DB and run data preparation:
+  - `PYTHONPATH=. python3 scripts/download_data.py`
+  - `python3 scripts/sanitize_data.py`
+
+4) Error: Unsupported strategy='...'
+Fix:
+- Use one of the supported IDs exactly:
+  `ema_cross`, `rsi_reversion`, `donchian_breakout`, `ema_trend_hold`, `bmsb`, `emalyarovich_smas`, `k_davey_mom_keltner`, `basic_keltner_reversion`
+
+5) Error: train_pct, test_pct, and step_pct are required in percentage mode
+Fix:
+- Provide all three percentage flags together, for example:
+  `--train-pct 50 --test-pct 25 --step-pct 25`
+
+6) Error: No-overlap policy violated: step_len must be >= test_len
+Fix:
+- Increase `--step-pct` (or `--step-bars`) so step >= test.
+  Example valid pair: `--test-pct 25 --step-pct 25`
+
+7) QuantStats report not available in UI
+Fix:
+- The app writes a fallback HTML summary when full report rendering fails.
+- Open `quantstats_report.html` from the run folder anyway; it will contain at least total return/max drawdown and exception details.
+
+8) Explainability produced zero artifacts
+Fix:
+- Increase synthetic rows and max-trades:
+  `PYTHONPATH=. python3 scripts/generate_trade_explainability.py --strategy ema_cross --rows 600 --context-bars 40 --max-trades 50`
+
+=======================================================================
+FAQ
+=======================================================================
+Q: Do I need API keys for backtesting?
+A: Usually no for deterministic tests. For some live/download flows, exchange scripts may rely on `.env` values.
+
+Q: Where is run history stored?
+A: In SQLite (`data/market_data.db`) table `backtest_runs`, plus run artifacts in `web/static/backtests/...`.
+
+Q: Why use deterministic mode?
+A: It gives reproducible outputs for testing and regression checks.
+
+Q: What does fallback mode in explainability mean?
+A: The system still creates explanations, but without full strategy-specific condition reconstruction.
+
+Q: Can I use DB mode without sanitizing?
+A: Yes, but sanitized (`ohlcv_clean`) is recommended for cleaner indicator behavior.
+
+Q: Which command should I run before a strategy change PR?
+A: `PYTHONPATH=. python3 scripts/run_strategy_tests_and_export_csv.py`
+
+=======================================================================
+Glossary
+=======================================================================
+PnL
+- Profit and Loss. Positive means gain, negative means loss.
+
+Drawdown
+- Peak-to-trough decline in account value during the tested period.
+
+Win rate
+- Percentage of trades with positive net PnL.
+
+Profit factor
+- Gross profits / gross losses. Above 1.0 means profits exceed losses.
+
+Fallback mode
+- Explainability mode used when full strategy-specific deterministic condition checks are not implemented.
+
+=======================================================================
+Safe workflow checklist
+=======================================================================
+- Always run commands from project root.
+- Always use `PYTHONPATH=.` for scripts that import `src`.
+- Install dependencies before first run.
+- Initialize DB before opening the web app.
+- Start with deterministic scripts to validate setup.
+- Use sanitized data (`ohlcv_clean`) for most runs.
+- Keep one terminal tab for app logs while using UI.
+- Re-run self-tests after strategy/backtester changes.
+- Check both terminal output and generated report files.
+- Keep generated artifacts under `docs/` and `web/static/` paths.
+
+=======================================================================
+Next steps plan (post-sprint proposals)
+=======================================================================
+1) Add a dedicated "User Reports" page in the web UI to browse walk-forward, self-test, and explainability artifacts without leaving the browser.
+2) Add one-click buttons in UI to trigger deterministic self-test, walk-forward, and explainability scripts.
+3) Add strategy-level explainability expansion so all strategies move from fallback mode to full deterministic condition checks.
+4) Add CLI presets (`scripts/run_*`) for beginner-safe default parameter bundles.
+5) Add a data health dashboard (missing candles, duplicate counts, sanitize status) using existing report outputs.
+6) Add a small "first-run wizard" in the UI that validates DB/data availability and suggests exact fix commands.

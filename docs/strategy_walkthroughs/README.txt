@@ -34,6 +34,10 @@ Generated baseline CSV files
 - csv_baselines/k_davey_mom_keltner.csv
 - csv_baselines/rsi_reversion.csv
 
+Generated comparison metrics artifacts
+- metrics/strategy_comparison.json
+- metrics/strategy_comparison_report.txt
+
 Notes
 - CSV baselines are created from deterministic synthetic OHLCV data.
 - Some strategies may produce no trades on the baseline dataset (for example,
@@ -45,3 +49,6 @@ Regeneration commands
 
 2) Regenerate PDFs and baseline CSVs:
    PYTHONPATH=. python3 scripts/generate_strategy_pdfs.py
+
+   This command also regenerates the unified deterministic strategy metrics JSON
+   and the human-readable comparison report under metrics/.
