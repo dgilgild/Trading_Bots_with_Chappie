@@ -1,0 +1,20 @@
+trade_number: 1
+side: LONG
+entry_time: 2021-07-25 00:00:00+00:00
+exit_time: 2021-07-26 00:00:00+00:00
+entry_price: 112.188458
+exit_price: 111.645026
+net_pnl: -6.839070
+entry_trigger: SMA20 touch + close above
+exit_trigger: Close below SMA20
+mode: fallback
+strategy_explainability: emalyarovich_smas
+note: strategy-specific deterministic condition reconstruction is not implemented
+entry_conditions:
+- entry_trigger_present: MET
+exit_conditions:
+- exit_trigger_present: MET
+entry_indicator_values_best_effort:
+- none_available
+exit_indicator_values_best_effort:
+- none_available

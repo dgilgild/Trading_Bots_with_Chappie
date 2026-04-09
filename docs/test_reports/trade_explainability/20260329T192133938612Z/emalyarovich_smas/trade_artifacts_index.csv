@@ -1,0 +1,7 @@
+trade_number,side,entry_time,exit_time,entry_price,exit_price,net_pnl,entry_trigger,exit_trigger,fallback_mode,image_file,explanation_file
+1,LONG,2021-07-25 00:00:00+00:00,2021-07-26 00:00:00+00:00,112.18845767687044,111.64502645889311,-6.839069882955193,SMA20 touch + close above,Close below SMA20,True,trade_001.png,trade_001.txt
+2,LONG,2021-08-30 00:00:00+00:00,2021-08-31 00:00:00+00:00,113.68464217942424,113.1035166409644,-7.058018600074149,SMA20 touch + close above,Close below SMA20,True,trade_002.png,trade_002.txt
+3,LONG,2021-10-08 00:00:00+00:00,2021-10-09 00:00:00+00:00,114.495000960204,113.97096705645768,-6.481001862426726,SMA20 touch + close above,Close below SMA20,True,trade_003.png,trade_003.txt
+4,LONG,2021-11-15 00:00:00+00:00,2021-11-16 00:00:00+00:00,117.9973890796588,117.42410910413405,-6.713891622466253,SMA20 touch + close above,Close below SMA20,True,trade_004.png,trade_004.txt
+5,LONG,2021-12-21 00:00:00+00:00,2021-12-22 00:00:00+00:00,119.01840178690344,118.43569493032122,-6.704351222683618,SMA20 touch + close above,Close below SMA20,True,trade_005.png,trade_005.txt
+6,LONG,2022-01-29 00:00:00+00:00,2022-01-31 00:00:00+00:00,120.48042529084624,119.65848503513548,-8.51743992594074,SMA20 touch + close above,Close below SMA20,True,trade_006.png,trade_006.txt

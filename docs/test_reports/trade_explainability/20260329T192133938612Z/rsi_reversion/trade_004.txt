@@ -1,0 +1,27 @@
+trade_number: 4
+side: LONG
+entry_time: 2021-09-07 00:00:00+00:00
+exit_time: 2021-09-21 00:00:00+00:00
+entry_price: 110.540947
+exit_price: 111.695201
+net_pnl: 8.700987
+entry_trigger: RSI 28.65 below 30
+exit_trigger: RSI 55.58 above 50
+mode: deterministic_full
+strategy_explainability: rsi_reversion
+entry_indicator_values:
+- entry_exec_rsi: 26.290607
+- entry_signal_rsi: 28.648755
+- rsi_entry_threshold: 30.000000
+- rsi_exit_threshold: 50.000000
+entry_conditions:
+- signal_rsi_lt_entry_threshold: MET
+- threshold_entry(rsi_entry=30.00)_present: MET
+exit_indicator_values:
+- exit_exec_rsi: 60.655622
+- exit_signal_rsi: 55.580600
+- rsi_entry_threshold: 30.000000
+- rsi_exit_threshold: 50.000000
+exit_conditions:
+- signal_rsi_gt_exit_threshold: MET
+- position_side_long_for_exit: MET

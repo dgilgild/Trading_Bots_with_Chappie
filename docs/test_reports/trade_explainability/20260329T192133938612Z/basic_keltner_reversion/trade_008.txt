@@ -1,0 +1,20 @@
+trade_number: 8
+side: LONG
+entry_time: 2021-05-19 00:00:00+00:00
+exit_time: 2021-05-21 00:00:00+00:00
+entry_price: 104.628352
+exit_price: 104.088713
+net_pnl: -6.398230
+entry_trigger: KC_LONG
+exit_trigger: KC_EXIT_SHORT
+mode: fallback
+strategy_explainability: basic_keltner_reversion
+note: strategy-specific deterministic condition reconstruction is not implemented
+entry_conditions:
+- entry_trigger_present: MET
+exit_conditions:
+- exit_trigger_present: MET
+entry_indicator_values_best_effort:
+- none_available
+exit_indicator_values_best_effort:
+- none_available

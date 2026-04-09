@@ -1,0 +1,43 @@
+{
+  "artifacts": [
+    {
+      "entry_price": 113.07736419234196,
+      "entry_time": "2021-07-21 00:00:00+00:00",
+      "entry_trigger": "Price above EMA200",
+      "exit_price": 110.70500109158662,
+      "exit_time": "2021-07-27 00:00:00+00:00",
+      "exit_trigger": "stop_loss",
+      "explanation_file": "trade_001.txt",
+      "fallback_mode": true,
+      "image_file": "trade_001.png",
+      "net_pnl": -22.959020000000017,
+      "side": "LONG",
+      "trade_number": 1
+    },
+    {
+      "entry_price": 111.53008442516634,
+      "entry_time": "2021-07-27 00:00:00+00:00",
+      "entry_trigger": "Price above EMA200",
+      "exit_price": 109.19018325392636,
+      "exit_time": "2021-08-01 00:00:00+00:00",
+      "exit_trigger": "stop_loss",
+      "explanation_file": "trade_002.txt",
+      "fallback_mode": true,
+      "image_file": "trade_002.png",
+      "net_pnl": -22.431903400639573,
+      "side": "LONG",
+      "trade_number": 2
+    }
+  ],
+  "context_bars": 30,
+  "deterministic_source_of_truth": "src.core.testing.synthetic_data.make_synthetic_ohlcv_v1",
+  "fallback_trades": 2,
+  "generated_trades": 2,
+  "high_contrast": true,
+  "max_trades": 10,
+  "requested_trades": 2,
+  "rows": 430,
+  "source_mode": "deterministic_backtest",
+  "strategy": "ema_trend_hold",
+  "timeframe_label": "1d"
+}

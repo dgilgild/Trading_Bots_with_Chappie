@@ -1,0 +1,4 @@
+trade_number,side,entry_time,exit_time,entry_price,exit_price,net_pnl,entry_trigger,exit_trigger,fallback_mode,image_file,explanation_file
+1,LONG,2021-02-06 00:00:00+00:00,2021-02-24 00:00:00+00:00,100.6820429027222,102.62817348222453,17.310141042740412,BMSB long,BMSB crossunder,False,trade_001.png,trade_001.txt
+2,LONG,2021-03-14 00:00:00+00:00,2021-04-05 00:00:00+00:00,101.9011666838167,105.4267913099232,33.12755841092413,BMSB long,BMSB crossunder,False,trade_002.png,trade_002.txt
+3,LONG,2021-04-21 00:00:00+00:00,2021-05-10 00:00:00+00:00,105.35374367245076,107.78383526288243,22.10431248528817,BMSB long,BMSB crossunder,False,trade_003.png,trade_003.txt

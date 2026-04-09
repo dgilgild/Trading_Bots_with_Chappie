@@ -1,0 +1,223 @@
+Live Trading Deployment Blueprint (VPS 24x7)
+
+Objective
+- Split backtest UI from live execution so research workflows do not interfere with always-on trading operations.
+- Keep current Flask app for control/reporting now, and isolate a dedicated trading worker service.
+
+1) Target architecture: control plane vs execution plane
+
+Control plane (operator-facing)
+- Service: Backtest and operations UI (Flask).
+- Responsibilities:
+  - Backtest runs, report browsing, run metadata, strategy parameter management.
+  - Read-only visibility into live status (health, last heartbeat, open positions snapshot).
+- Availability target: business-hours critical; can be restarted without interrupting live trades.
+
+Execution plane (market-facing)
+- Service: Live trading worker (separate process, no web endpoints by default).
+- Responsibilities:
+  - Poll market data, evaluate strategy signals, submit/cancel orders, maintain position state.
+  - Persist execution events and heartbeat to DB/logs.
+  - Enforce safety controls (max risk, kill-switch, stale-data guard).
+- Availability target: 24x7 critical; independent lifecycle from control plane.
+
+Data boundary
+- Shared SQLite can be temporary for first cut; medium-term move to PostgreSQL recommended for concurrency and reliability.
+- Use explicit tables for live runs/events (example: live_sessions, live_orders, live_positions, live_heartbeats).
+
+2) Recommended stack choices
+
+Now (low-risk path)
+- Keep Flask for UI/control plane.
+- Add a separate Python worker entry point for execution plane.
+- Use systemd for supervision and restart semantics.
+- Use python-dotenv + environment files for runtime configuration.
+
+Optional migration (later)
+- Migrate control-plane API endpoints to FastAPI if async I/O and typed OpenAPI become priorities.
+- Keep execution worker process separate even after migration.
+- Migration trigger: when API throughput, typed contracts, or async exchange integrations become bottlenecks.
+
+3) Folder and service boundaries
+
+Suggested structure
+- web/
+  - app.py (Flask UI and control endpoints only)
+- src/live/
+  - runner.py (worker bootstrap/loop)
+  - execution.py (order placement/cancel logic)
+  - risk.py (position limits, exposure checks, kill-switch checks)
+  - heartbeat.py (liveness updates)
+  - state_store.py (DB I/O for live state)
+- src/core/
+  - reusable utilities (db, exchange adapters, market data helpers)
+- config/
+  - live_trading.env.example (non-secret config keys)
+  - systemd/ (unit file templates)
+
+Boundary rules
+- web/ must not place exchange orders directly.
+- src/live/ must not depend on Flask request context.
+- Shared modules under src/core/ should be side-effect free and reusable.
+
+4) Process supervision with systemd
+
+Unit names
+- trading-bot-web.service (control plane)
+- trading-bot-live-worker.service (execution plane)
+- trading-bot-health.timer + trading-bot-health.service (optional watchdog/heartbeat checks)
+
+Sample: /etc/systemd/system/trading-bot-web.service
+----------------------------------------------------
+[Unit]
+Description=Trading Bot Control Plane (Flask)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=trader
+Group=trader
+WorkingDirectory=/opt/trading-bot
+EnvironmentFile=/etc/trading-bot/control.env
+ExecStart=/opt/trading-bot/.venv/bin/python web/app.py
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/opt/trading-bot/data /opt/trading-bot/web/static
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+
+Sample: /etc/systemd/system/trading-bot-live-worker.service
+------------------------------------------------------------
+[Unit]
+Description=Trading Bot Execution Plane Worker
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=trader
+Group=trader
+WorkingDirectory=/opt/trading-bot
+EnvironmentFile=/etc/trading-bot/live.env
+ExecStart=/opt/trading-bot/.venv/bin/python -m src.live.runner
+Restart=always
+RestartSec=3
+TimeoutStopSec=20
+KillSignal=SIGINT
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/opt/trading-bot/data /opt/trading-bot/logs
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+
+5) Startup order and dependency
+
+Recommended boot sequence
+1. network-online.target
+2. trading-bot-live-worker.service
+3. trading-bot-web.service
+
+Dependency notes
+- Worker does not require web service to run.
+- Web can display degraded status if worker heartbeat is stale.
+- If DB migration step is introduced, add a one-shot service (trading-bot-migrate.service) and declare Before= on worker/web units.
+
+6) Restart and failure behavior
+
+Policy
+- Worker: Restart=always for maximum continuity.
+- Web: Restart=on-failure.
+- Use StartLimit* to avoid tight crash loops.
+
+Failure modes and behavior
+- Exchange API timeout: retry with exponential backoff; do not duplicate order placement without idempotency key/clientOrderId.
+- Repeated worker crash: systemd throttles restarts; on-call checks journal and last heartbeat.
+- Stale market data: worker moves to safe mode (no new entries, optional managed exits only).
+
+7) Logging, monitoring, heartbeat
+
+Logging
+- Use structured logs (timestamp, service, strategy, symbol, action, order_id, error_code).
+- Stream to journald; optionally forward to Loki/ELK later.
+- Keep local rotation policy for any file logs under /opt/trading-bot/logs.
+
+Monitoring and heartbeat
+- Worker writes heartbeat every N seconds (for example 15s) with: status, last_data_ts, last_order_ts, open_positions_count.
+- Control plane exposes a simple health endpoint and renders worker heartbeat status.
+- Alert conditions (minimum):
+  - no heartbeat for >60s,
+  - consecutive order failures threshold reached,
+  - risk limit breach or kill-switch activated.
+
+8) Security hardening
+
+Secrets and credentials
+- Store API keys only in /etc/trading-bot/live.env with chmod 600 and owner root/trader.
+- Never commit secrets in repo or .env tracked files.
+- Use separate API keys for paper/live and least-required exchange permissions.
+
+Least privilege
+- Dedicated non-root user (trader).
+- Restrict writable paths via ReadWritePaths in systemd.
+- Keep inbound firewall minimal (only UI port if needed, SSH, VPN/allowlist preferred).
+
+Safety controls
+- Hard kill-switch flag (env + DB toggle) checked each loop iteration.
+- Max notional per trade, max daily loss, and max concurrent positions enforced before order placement.
+- Manual emergency stop procedure documented and tested quarterly.
+
+9) VPS deployment checklist
+
+Provisioning
+- [ ] Create VPS user/group (trader) and lock down SSH (key auth, no password, no root login).
+- [ ] Install Python, venv, git, sqlite/postgres client, and systemd prerequisites.
+- [ ] Clone repo to /opt/trading-bot and create .venv.
+- [ ] Install dependencies with pip install -r requirements.txt.
+
+Configuration
+- [ ] Create /etc/trading-bot/control.env and /etc/trading-bot/live.env with least-privilege secrets.
+- [ ] Initialize DB and required tables.
+- [ ] Install systemd units and run: systemctl daemon-reload.
+
+Activation
+- [ ] Enable/start worker first, then web.
+- [ ] Verify: systemctl status, journalctl logs, heartbeat freshness.
+- [ ] Validate paper trading dry-run before enabling live mode.
+
+10) Rollback and incident response (quick procedure)
+
+Rollback (deployment issue)
+1. Disable live entries: set kill-switch ON and restart worker.
+2. Revert to previous git tag/release in /opt/trading-bot.
+3. Reinstall dependencies if required, restart services.
+4. Confirm heartbeat, connectivity, and safe-mode status before resuming entries.
+
+Incident response (production anomaly)
+1. Trigger kill-switch immediately.
+2. Capture evidence: journalctl for worker/web, recent orders, position snapshot, heartbeat gaps.
+3. Classify severity:
+   - Sev1: unauthorized orders, uncontrolled position growth, key compromise.
+   - Sev2: repeated order failures, stale data, prolonged downtime.
+4. Contain (rotate keys, block network path, stop service if needed).
+5. Recover with controlled restart and post-incident validation checklist.
+6. Write incident report with timeline, root cause, and preventive actions.
+
+Implementation notes for this repo
+- Keep current backtest UX untouched while introducing the live worker as an additive service.
+- Promote to PostgreSQL before high-frequency or multi-strategy live concurrency.
+- Treat this blueprint as the source for backlog items ST-500..ST-508.

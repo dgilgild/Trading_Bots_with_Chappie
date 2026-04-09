@@ -1,0 +1,20 @@
+trade_number: 6
+side: LONG
+entry_time: 2022-01-29 00:00:00+00:00
+exit_time: 2022-01-31 00:00:00+00:00
+entry_price: 120.480425
+exit_price: 119.658485
+net_pnl: -8.517440
+entry_trigger: SMA20 touch + close above
+exit_trigger: Close below SMA20
+mode: fallback
+strategy_explainability: emalyarovich_smas
+note: strategy-specific deterministic condition reconstruction is not implemented
+entry_conditions:
+- entry_trigger_present: MET
+exit_conditions:
+- exit_trigger_present: MET
+entry_indicator_values_best_effort:
+- none_available
+exit_indicator_values_best_effort:
+- none_available

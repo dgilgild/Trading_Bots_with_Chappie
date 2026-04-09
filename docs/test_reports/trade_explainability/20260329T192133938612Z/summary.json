@@ -1,0 +1,130 @@
+{
+  "per_strategy_counts": [
+    {
+      "csv_index": "docs/test_reports/trade_explainability/20260329T192133938612Z/ema_cross/trade_artifacts_index.csv",
+      "fallback_trades": 0,
+      "generated_trades": 2,
+      "json_index": "docs/test_reports/trade_explainability/20260329T192133938612Z/ema_cross/trade_artifacts_index.json",
+      "output_dir": "docs/test_reports/trade_explainability/20260329T192133938612Z/ema_cross",
+      "requested_trades": 2,
+      "source_mode": "deterministic_backtest",
+      "strategy": "ema_cross",
+      "warnings": []
+    },
+    {
+      "csv_index": "docs/test_reports/trade_explainability/20260329T192133938612Z/rsi_reversion/trade_artifacts_index.csv",
+      "fallback_trades": 0,
+      "generated_trades": 6,
+      "json_index": "docs/test_reports/trade_explainability/20260329T192133938612Z/rsi_reversion/trade_artifacts_index.json",
+      "output_dir": "docs/test_reports/trade_explainability/20260329T192133938612Z/rsi_reversion",
+      "requested_trades": 6,
+      "source_mode": "deterministic_backtest",
+      "strategy": "rsi_reversion",
+      "warnings": []
+    },
+    {
+      "csv_index": "docs/test_reports/trade_explainability/20260329T192133938612Z/donchian_breakout/trade_artifacts_index.csv",
+      "fallback_trades": 0,
+      "generated_trades": 0,
+      "json_index": "docs/test_reports/trade_explainability/20260329T192133938612Z/donchian_breakout/trade_artifacts_index.json",
+      "output_dir": "docs/test_reports/trade_explainability/20260329T192133938612Z/donchian_breakout",
+      "requested_trades": 0,
+      "source_mode": "deterministic_backtest",
+      "strategy": "donchian_breakout",
+      "warnings": [
+        "donchian_breakout: requested_trades is zero",
+        "donchian_breakout: generated_trades is zero (no per-trade artifacts created)"
+      ]
+    },
+    {
+      "csv_index": "docs/test_reports/trade_explainability/20260329T192133938612Z/ema_trend_hold/trade_artifacts_index.csv",
+      "fallback_trades": 2,
+      "generated_trades": 2,
+      "json_index": "docs/test_reports/trade_explainability/20260329T192133938612Z/ema_trend_hold/trade_artifacts_index.json",
+      "output_dir": "docs/test_reports/trade_explainability/20260329T192133938612Z/ema_trend_hold",
+      "requested_trades": 2,
+      "source_mode": "deterministic_backtest",
+      "strategy": "ema_trend_hold",
+      "warnings": [
+        "ema_trend_hold: all generated trades used fallback explainability mode"
+      ]
+    },
+    {
+      "csv_index": "docs/test_reports/trade_explainability/20260329T192133938612Z/bmsb/trade_artifacts_index.csv",
+      "fallback_trades": 0,
+      "generated_trades": 10,
+      "json_index": "docs/test_reports/trade_explainability/20260329T192133938612Z/bmsb/trade_artifacts_index.json",
+      "output_dir": "docs/test_reports/trade_explainability/20260329T192133938612Z/bmsb",
+      "requested_trades": 10,
+      "source_mode": "deterministic_backtest",
+      "strategy": "bmsb",
+      "warnings": []
+    },
+    {
+      "csv_index": "docs/test_reports/trade_explainability/20260329T192133938612Z/emalyarovich_smas/trade_artifacts_index.csv",
+      "fallback_trades": 6,
+      "generated_trades": 6,
+      "json_index": "docs/test_reports/trade_explainability/20260329T192133938612Z/emalyarovich_smas/trade_artifacts_index.json",
+      "output_dir": "docs/test_reports/trade_explainability/20260329T192133938612Z/emalyarovich_smas",
+      "requested_trades": 6,
+      "source_mode": "deterministic_backtest",
+      "strategy": "emalyarovich_smas",
+      "warnings": [
+        "emalyarovich_smas: all generated trades used fallback explainability mode"
+      ]
+    },
+    {
+      "csv_index": "docs/test_reports/trade_explainability/20260329T192133938612Z/k_davey_mom_keltner/trade_artifacts_index.csv",
+      "fallback_trades": 6,
+      "generated_trades": 6,
+      "json_index": "docs/test_reports/trade_explainability/20260329T192133938612Z/k_davey_mom_keltner/trade_artifacts_index.json",
+      "output_dir": "docs/test_reports/trade_explainability/20260329T192133938612Z/k_davey_mom_keltner",
+      "requested_trades": 6,
+      "source_mode": "deterministic_backtest",
+      "strategy": "k_davey_mom_keltner",
+      "warnings": [
+        "k_davey_mom_keltner: all generated trades used fallback explainability mode"
+      ]
+    },
+    {
+      "csv_index": "docs/test_reports/trade_explainability/20260329T192133938612Z/basic_keltner_reversion/trade_artifacts_index.csv",
+      "fallback_trades": 10,
+      "generated_trades": 10,
+      "json_index": "docs/test_reports/trade_explainability/20260329T192133938612Z/basic_keltner_reversion/trade_artifacts_index.json",
+      "output_dir": "docs/test_reports/trade_explainability/20260329T192133938612Z/basic_keltner_reversion",
+      "requested_trades": 24,
+      "source_mode": "deterministic_backtest",
+      "strategy": "basic_keltner_reversion",
+      "warnings": [
+        "basic_keltner_reversion: all generated trades used fallback explainability mode"
+      ]
+    }
+  ],
+  "run_metadata": {
+    "context_bars": 30,
+    "high_contrast": true,
+    "max_trades": 10,
+    "rows": 430,
+    "timeframe_label": "1d"
+  },
+  "run_output_dir": "docs/test_reports/trade_explainability/20260329T192133938612Z",
+  "strategies_processed": [
+    "ema_cross",
+    "rsi_reversion",
+    "donchian_breakout",
+    "ema_trend_hold",
+    "bmsb",
+    "emalyarovich_smas",
+    "k_davey_mom_keltner",
+    "basic_keltner_reversion"
+  ],
+  "total_generated_trades": 42,
+  "warnings": [
+    "donchian_breakout: requested_trades is zero",
+    "donchian_breakout: generated_trades is zero (no per-trade artifacts created)",
+    "ema_trend_hold: all generated trades used fallback explainability mode",
+    "emalyarovich_smas: all generated trades used fallback explainability mode",
+    "k_davey_mom_keltner: all generated trades used fallback explainability mode",
+    "basic_keltner_reversion: all generated trades used fallback explainability mode"
+  ]
+}

@@ -1,0 +1,29 @@
+trade_number: 1
+side: LONG
+entry_time: 2021-09-25 00:00:00+00:00
+exit_time: 2021-10-13 00:00:00+00:00
+entry_price: 114.723088
+exit_price: 111.304340
+net_pnl: -31.770200
+entry_trigger: EMA20 crossed ABOVE EMA50 + EMA200 filter
+exit_trigger: stop_loss
+mode: deterministic_full
+strategy_explainability: ema_cross
+entry_indicator_values:
+- entry_exec_ema_fast: 111.582615
+- entry_exec_ema_slow: 111.404626
+- entry_exec_ema_trend: 108.645829
+- entry_signal_ema_fast: 111.371605
+- entry_signal_ema_slow: 111.315541
+- entry_signal_ema_trend: 108.596167
+entry_conditions:
+- bullish_cross(prev<slow && last>slow): MET
+- bearish_cross(prev>slow && last<slow): NOT_MET
+- trend_filter_long(close>ema_trend): MET
+- trend_filter_short(close<ema_trend): NOT_MET
+exit_indicator_values:
+- exit_exec_ema_fast: 113.739309
+- exit_exec_ema_slow: 112.915018
+- exit_exec_ema_trend: 109.598131
+exit_conditions:
+- stop_loss_hit_vs_bar_extreme: MET

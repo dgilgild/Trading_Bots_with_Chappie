@@ -11,6 +11,8 @@
             <span class="pill">Strategy Lab</span>
         </div>
 
+        <div id="form-state-toast" class="form-state-toast" hidden aria-live="polite"></div>
+
         <form id="backtest-form" action="/run_backtest" method="POST">
             <div class="section-title">General</div>
             <div class="section-grid">
@@ -342,6 +344,12 @@
                 </div>
 
                 <div class="guide-section">
+                    <div class="guide-label">Best market regime</div>
+                    <div class="guide-text" id="guide-best-regime"></div>
+                    <div class="regime-badges" id="guide-regime-badges"></div>
+                </div>
+
+                <div class="guide-section">
                     <div class="guide-label">Timeframes</div>
                     <div class="guide-text" id="guide-timeframes"></div>
                 </div>
@@ -413,6 +421,8 @@
 </section>
 
 <script>
+    const backtestForm = document.getElementById("backtest-form");
+    const formStateToast = document.getElementById("form-state-toast");
     const strategySelect = document.getElementById("strategy-select");
     const strategyRows = document.querySelectorAll("[data-strategy]");
     const symbolInput = document.getElementById("symbol-input");
@@ -426,6 +436,8 @@
     const guideRecommended = document.getElementById("guide-recommended");
     const guideRecommendedBlock = document.getElementById("guide-recommended-block");
     const guideMarkets = document.getElementById("guide-markets");
+    const guideBestRegime = document.getElementById("guide-best-regime");
+    const guideRegimeBadges = document.getElementById("guide-regime-badges");
     const guideTimeframes = document.getElementById("guide-timeframes");
 
     const strategyGuide = {
@@ -435,6 +447,8 @@
             params: ["EMA Fast", "EMA Slow", "Stop Loss %", "Take Profit %", "Use TP/SL"],
             recommended: [],
             markets: "Crypto (BTC/USDT)",
+            best_regime: "Bull or bear trends; avoid lateral chop.",
+            regime_tags: ["bull", "bear"],
             timeframes: "15m–1h",
         },
         rsi_reversion: {
@@ -443,6 +457,8 @@
             params: ["RSI Period", "RSI Entry", "RSI Exit", "Stop Loss %", "Take Profit %", "Use TP/SL"],
             recommended: [],
             markets: "Range-bound markets",
+            best_regime: "Lateral/range markets; weak in strong trends.",
+            regime_tags: ["lateral"],
             timeframes: "15m–1h",
         },
         donchian_breakout: {
@@ -451,6 +467,8 @@
             params: ["Donchian Lookback", "Stop Loss %", "Take Profit %", "Use TP/SL"],
             recommended: ["Lookback 55"],
             markets: "Trend markets",
+            best_regime: "Bull or bear breakouts; poor in lateral ranges.",
+            regime_tags: ["bull", "bear"],
             timeframes: "4h–1d",
         },
         ema_trend_hold: {
@@ -459,6 +477,8 @@
             params: ["Trend EMA", "Stop Loss %", "Take Profit %", "Use TP/SL"],
             recommended: [],
             markets: "Trend markets",
+            best_regime: "Bull trends; weak in bear and lateral markets.",
+            regime_tags: ["bull"],
             timeframes: "4h–1d",
         },
         bmsb: {
@@ -467,6 +487,8 @@
             params: ["BMSB SMA", "BMSB EMA", "Tensignal Window", "Trailing Stop %", "Use TP/SL"],
             recommended: [],
             markets: "Crypto",
+            best_regime: "Bull markets; often sidelined in bear/lateral phases.",
+            regime_tags: ["bull"],
             timeframes: "1d",
         },
         emalyarovich_smas: {
@@ -475,6 +497,8 @@
             params: ["SMA Fast", "SMA Slow", "Slope Bars", "Stop Loss %", "Take Profit %", "Use TP/SL"],
             recommended: ["SMA Fast 20", "SMA Slow 200", "Slope Bars 3"],
             markets: "Trend markets",
+            best_regime: "Bull trends; weak in bear/lateral conditions.",
+            regime_tags: ["bull"],
             timeframes: "4h–1d",
         },
         k_davey_mom_keltner: {
@@ -500,6 +524,8 @@
                 "Vol Mult 0.8",
             ],
             markets: "ES=F / MES=F",
+            best_regime: "Bull or bear trends with momentum; avoid lateral chop.",
+            regime_tags: ["bull", "bear"],
             timeframes: "1d only",
         },
         basic_keltner_reversion: {
@@ -515,9 +541,19 @@
             ],
             recommended: [],
             markets: "Crypto / Index Futures",
+            best_regime: "Lateral markets; weak during sustained bull/bear trends.",
+            regime_tags: ["lateral"],
             timeframes: "15m–1d",
         },
     };
+
+    function formatRegimeLabel(value) {
+        const text = String(value || "").toUpperCase();
+        if (!text) {
+            return "";
+        }
+        return text;
+    }
 
     function updateStrategyFields() {
         const selected = strategySelect.value;
@@ -576,6 +612,8 @@
             guideRecommended.innerHTML = "";
             guideRecommendedBlock.style.display = "none";
             guideMarkets.textContent = "";
+            guideBestRegime.textContent = "";
+            guideRegimeBadges.innerHTML = "";
             guideTimeframes.textContent = "";
             return;
         }
@@ -591,10 +629,162 @@
             guideRecommendedBlock.style.display = "none";
         }
         guideMarkets.textContent = data.markets;
+        guideBestRegime.textContent = data.best_regime;
+        guideRegimeBadges.innerHTML = (data.regime_tags || [])
+            .map((tag) => {
+                const safeTag = String(tag || "").toLowerCase();
+                const label = formatRegimeLabel(safeTag);
+                return `<span class="regime-badge regime-badge--${safeTag}">${label}</span>`;
+            })
+            .join("");
         guideTimeframes.textContent = data.timeframes;
     }
 
     strategySelect.addEventListener("change", renderGuide);
     renderGuide();
+
+    const FORM_STATE_KEY = "backtestForm:lastSession";
+
+    function showFormStateToast(message, type = "info") {
+        if (!formStateToast || !message) {
+            return;
+        }
+        formStateToast.textContent = message;
+        formStateToast.hidden = false;
+        formStateToast.classList.remove("form-state-toast--error");
+        if (type === "error") {
+            formStateToast.classList.add("form-state-toast--error");
+        }
+        formStateToast.classList.add("is-visible");
+        window.clearTimeout(showFormStateToast._timer);
+        showFormStateToast._timer = window.setTimeout(() => {
+            formStateToast.classList.remove("is-visible");
+            formStateToast.hidden = true;
+        }, 3500);
+    }
+
+    function captureFormState() {
+        if (!backtestForm) {
+            return {};
+        }
+        const state = {};
+        const elements = Array.from(backtestForm.elements || []);
+        elements.forEach((el) => {
+            if (!el.name || el.disabled) {
+                return;
+            }
+            if (el.type === "checkbox") {
+                state[el.name] = Boolean(el.checked);
+                return;
+            }
+            state[el.name] = el.value;
+        });
+        return state;
+    }
+
+    function persistFormState() {
+        try {
+            localStorage.setItem(FORM_STATE_KEY, JSON.stringify(captureFormState()));
+        } catch (error) {
+            // localStorage unavailable; ignore safely
+        }
+    }
+
+    function applyFormState(values) {
+        if (!backtestForm || !values || typeof values !== "object") {
+            return;
+        }
+        Object.keys(values).forEach((name) => {
+            const field = backtestForm.elements[name];
+            if (!field) {
+                return;
+            }
+
+            const applyToElement = (el) => {
+                if (!el) {
+                    return;
+                }
+                if (el.type === "checkbox") {
+                    el.checked = Boolean(values[name]);
+                } else {
+                    el.value = values[name];
+                }
+            };
+
+            if (field instanceof RadioNodeList || (Array.isArray(field) && field.length)) {
+                const arr = Array.from(field);
+                arr.forEach((el) => {
+                    if (el.type === "radio") {
+                        el.checked = String(el.value) === String(values[name]);
+                    } else {
+                        applyToElement(el);
+                    }
+                });
+            } else {
+                applyToElement(field);
+            }
+        });
+
+        updateExchangeFromSymbol();
+        updateTpSlState();
+        updateStrategyFields();
+        renderGuide();
+    }
+
+    function loadStateFromLocalStorage() {
+        try {
+            const raw = localStorage.getItem(FORM_STATE_KEY);
+            if (!raw) {
+                return null;
+            }
+            return JSON.parse(raw);
+        } catch (error) {
+            return null;
+        }
+    }
+
+    async function loadStateFromRun(runId) {
+        const resp = await fetch(`/api/runs/${encodeURIComponent(runId)}/params`);
+        const payload = await resp.json();
+        if (!resp.ok || !payload.ok) {
+            throw new Error(payload.error || "Failed to load run parameters");
+        }
+        return payload.params || {};
+    }
+
+    async function initializeFormState() {
+        const params = new URLSearchParams(window.location.search);
+        const loadRunId = params.get("load_run");
+
+        if (loadRunId) {
+            try {
+                const runState = await loadStateFromRun(loadRunId);
+                applyFormState(runState);
+                persistFormState();
+                showFormStateToast(`Loaded parameters from run ${loadRunId}.`);
+                params.delete("load_run");
+                const query = params.toString();
+                const cleanUrl = `${window.location.pathname}${query ? "?" + query : ""}`;
+                window.history.replaceState({}, "", cleanUrl);
+                return;
+            } catch (error) {
+                console.warn("Could not load params for run", loadRunId, error);
+                showFormStateToast(`Could not load parameters for run ${loadRunId}.`, "error");
+            }
+        }
+
+        const localState = loadStateFromLocalStorage();
+        if (localState) {
+            applyFormState(localState);
+            showFormStateToast("Restored last session parameters.");
+        }
+    }
+
+    if (backtestForm) {
+        backtestForm.addEventListener("change", persistFormState);
+        backtestForm.addEventListener("submit", persistFormState);
+    }
+
+    initializeFormState();
 </script>
 {% endblock %}

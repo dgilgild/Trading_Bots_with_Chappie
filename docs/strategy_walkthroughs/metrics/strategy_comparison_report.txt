@@ -1,0 +1,27 @@
+Strategy Comparison Report
+
+Source JSON: docs/strategy_walkthroughs/metrics/strategy_comparison.json
+Deterministic baseline: src.core.testing.synthetic_data.make_synthetic_ohlcv_v1(rows=430, freq='D')
+
+Metric definitions
+- drawdown_proxy: Approximation from per-trade net PnL only: min(cumulative_net_pnl - running_peak)
+
+Per-strategy summary
+- basic_keltner_reversion: trades=24, total_net_pnl=-308.453923, win_rate=0.000000%, avg_pnl=-12.852247, avg_bars_in_trade=4.375000, drawdown_proxy=-291.576673
+- bmsb: trades=10, total_net_pnl=242.295125, win_rate=100.000000%, avg_pnl=24.229513, avg_bars_in_trade=19.500000, drawdown_proxy=0.000000
+- donchian_breakout: trades=0, total_net_pnl=0.000000, win_rate=0.000000%, avg_pnl=0.000000, avg_bars_in_trade=0.000000, drawdown_proxy=0.000000
+- ema_cross: trades=2, total_net_pnl=-62.531054, win_rate=0.000000%, avg_pnl=-31.265527, avg_bars_in_trade=18.500000, drawdown_proxy=-30.760854
+- ema_trend_hold: trades=2, total_net_pnl=-45.390923, win_rate=0.000000%, avg_pnl=-22.695462, avg_bars_in_trade=5.500000, drawdown_proxy=-22.431903
+- emalyarovich_smas: trades=6, total_net_pnl=-42.313773, win_rate=0.000000%, avg_pnl=-7.052296, avg_bars_in_trade=1.166667, drawdown_proxy=-35.474703
+- k_davey_mom_keltner: trades=6, total_net_pnl=-66.654390, win_rate=0.000000%, avg_pnl=-11.109065, avg_bars_in_trade=16.833333, drawdown_proxy=-56.962018
+- rsi_reversion: trades=6, total_net_pnl=57.056364, win_rate=100.000000%, avg_pnl=9.509394, avg_bars_in_trade=11.166667, drawdown_proxy=0.000000
+
+Ranking (by total_net_pnl desc, win_rate desc, strategy name)
+- #1 bmsb: total_net_pnl=242.295125, win_rate=100.000000%, trades=10
+- #2 rsi_reversion: total_net_pnl=57.056364, win_rate=100.000000%, trades=6
+- #3 donchian_breakout: total_net_pnl=0.000000, win_rate=0.000000%, trades=0
+- #4 emalyarovich_smas: total_net_pnl=-42.313773, win_rate=0.000000%, trades=6
+- #5 ema_trend_hold: total_net_pnl=-45.390923, win_rate=0.000000%, trades=2
+- #6 ema_cross: total_net_pnl=-62.531054, win_rate=0.000000%, trades=2
+- #7 k_davey_mom_keltner: total_net_pnl=-66.654390, win_rate=0.000000%, trades=6
+- #8 basic_keltner_reversion: total_net_pnl=-308.453923, win_rate=0.000000%, trades=24

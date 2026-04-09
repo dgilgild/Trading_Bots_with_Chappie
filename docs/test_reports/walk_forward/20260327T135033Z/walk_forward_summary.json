@@ -1,0 +1,29 @@
+{
+  "end_date": null,
+  "exchange": "binance",
+  "mode": "deterministic",
+  "run_stamp": "20260327T135033Z",
+  "start_date": null,
+  "step_len": 105,
+  "strategy": "ema_cross",
+  "summary": {
+    "aggregate_net_profit": 0.0,
+    "data_mode": "deterministic",
+    "mean_window_net_profit": 0.0,
+    "mean_window_profit_factor": null,
+    "step_len": 105,
+    "strategy": "ema_cross",
+    "test_len": 105,
+    "total_bars": 420,
+    "total_trades": 0,
+    "train_len": 210,
+    "window_count": 2,
+    "window_mode": "percentage",
+    "windows_with_trades": 0
+  },
+  "symbol": "BTC/USDT",
+  "test_len": 105,
+  "timeframe": "1d",
+  "train_len": 210,
+  "window_mode": "percentage"
+}

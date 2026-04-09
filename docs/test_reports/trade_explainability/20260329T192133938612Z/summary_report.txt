@@ -1,0 +1,34 @@
+trade_explainability_run_summary
+run_output_dir: docs/test_reports/trade_explainability/20260329T192133938612Z
+run_metadata:
+- rows: 430
+- timeframe_label: 1d
+- context_bars: 30
+- max_trades: 10
+- high_contrast: True
+strategies_processed:
+- ema_cross
+- rsi_reversion
+- donchian_breakout
+- ema_trend_hold
+- bmsb
+- emalyarovich_smas
+- k_davey_mom_keltner
+- basic_keltner_reversion
+per_strategy_counts:
+- ema_cross: requested_trades=2, generated_trades=2, fallback_trades=0
+- rsi_reversion: requested_trades=6, generated_trades=6, fallback_trades=0
+- donchian_breakout: requested_trades=0, generated_trades=0, fallback_trades=0
+- ema_trend_hold: requested_trades=2, generated_trades=2, fallback_trades=2
+- bmsb: requested_trades=10, generated_trades=10, fallback_trades=0
+- emalyarovich_smas: requested_trades=6, generated_trades=6, fallback_trades=6
+- k_davey_mom_keltner: requested_trades=6, generated_trades=6, fallback_trades=6
+- basic_keltner_reversion: requested_trades=24, generated_trades=10, fallback_trades=10
+total_generated_trades: 42
+warnings:
+- donchian_breakout: requested_trades is zero
+- donchian_breakout: generated_trades is zero (no per-trade artifacts created)
+- ema_trend_hold: all generated trades used fallback explainability mode
+- emalyarovich_smas: all generated trades used fallback explainability mode
+- k_davey_mom_keltner: all generated trades used fallback explainability mode
+- basic_keltner_reversion: all generated trades used fallback explainability mode

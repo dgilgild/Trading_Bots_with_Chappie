@@ -1,0 +1,3 @@
+trade_number,side,entry_time,exit_time,entry_price,exit_price,net_pnl,entry_trigger,exit_trigger,fallback_mode,image_file,explanation_file
+1,LONG,2021-09-25 00:00:00+00:00,2021-10-13 00:00:00+00:00,114.72308761357426,111.30433960268977,-31.770200000000003,EMA20 crossed ABOVE EMA50 + EMA200 filter,stop_loss,False,trade_001.png,trade_001.txt
+2,LONG,2022-01-16 00:00:00+00:00,2022-02-04 00:00:00+00:00,120.45921179172016,116.8695272803269,-30.76085439195998,EMA20 crossed ABOVE EMA50 + EMA200 filter,stop_loss,False,trade_002.png,trade_002.txt

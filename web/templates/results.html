@@ -21,6 +21,10 @@
         <pre>{{ params | tojson(indent=2) }}</pre>
     </div>
 
+    <div class="results-block">
+        <strong>Selected Date Range:</strong> {{ run_date_window }}
+    </div>
+
     {% if exit_note %}
     <div class="section-title">Exit Rule</div>
     <div class="results-block">
@@ -30,10 +34,16 @@
 
         <div class="section-title">Reports</div>
         <div class="reports-grid">
+            <a class="btn-primary" href="{{ url_for('index') }}?load_run={{ run['run_id'] }}">
+                Reuse These Parameters
+            </a>
+
             {% if run["csv_path"] %}
             <a class="btn-primary" href="{{ url_for('static', filename=run['csv_path']) }}" download>
                 Download Trades CSV
             </a>
+            {% elif no_trades_message %}
+            <span class="report-muted">{{ no_trades_message }}</span>
             {% endif %}
 
             {% if run["chart_path"] %}
@@ -149,6 +159,518 @@
             </script>
         {% else %}
         <div class="report-muted">{{ trades_chart_error or "Trades graph not available for this run." }}</div>
+        {% endif %}
+
+        <div class="section-title">Individual Trade Viewer</div>
+        {% if trade_selector_options %}
+        <div class="trade-viewer-panel" data-trade-viewer data-run-id="{{ run.run_id }}">
+            <div class="trade-viewer-controls">
+                <label for="trade-viewer-filter" class="guide-label">Filter</label>
+                <select id="trade-viewer-filter" class="trade-viewer-select trade-viewer-filter" data-trade-filter>
+                    <option value="ALL">ALL</option>
+                    <option value="LONG">LONG</option>
+                    <option value="SHORT">SHORT</option>
+                    <option value="WINNING">WINNING</option>
+                    <option value="LOSING">LOSING</option>
+                </select>
+                <label for="trade-viewer-select" class="guide-label">Choose Trade</label>
+                <select id="trade-viewer-select" class="trade-viewer-select" data-trade-select>
+                    {% for option in trade_selector_options %}
+                    <option value="{{ option.trade_number }}">{{ option.label }}</option>
+                    {% endfor %}
+                </select>
+                <button type="button" class="trades-nav-btn" data-trade-prev>Previous Trade</button>
+                <button type="button" class="trades-nav-btn" data-trade-next>Next Trade</button>
+                <button type="button" class="trades-nav-btn" data-trade-render>Show Trade Graph</button>
+                <button type="button" class="trades-nav-btn" data-trade-export>Export Packet (PNG + TXT)</button>
+            </div>
+            {% if trade_viewer_indicator_toggles %}
+            <div class="trade-viewer-indicators">
+                <div class="guide-label">Overlays</div>
+                <div class="indicator-toggle-grid">
+                    {% for indicator in trade_viewer_indicator_toggles %}
+                    <label class="indicator-toggle-item">
+                        <input type="checkbox" data-indicator-toggle value="{{ indicator.value }}" {% if indicator.checked %}checked{% endif %}>
+                        <span>{{ indicator.label }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            <div class="report-muted trade-viewer-indicators-empty">
+                No strategy-specific overlays configured. Candles + entry/exit markers only.
+            </div>
+            {% endif %}
+            <div class="report-muted">Shortcuts: <strong>[</strong> previous trade, <strong>]</strong> next trade, <strong>Enter</strong> refresh selected trade.</div>
+            <div class="report-muted" data-trade-filter-empty hidden>No trades match this filter.</div>
+
+            <div class="report-muted" data-trade-warning hidden></div>
+            <button type="button" class="trades-nav-btn" data-trade-confirm hidden>
+                Create Anyway (more than {{ trade_viewer_max_candles }} candles)
+            </button>
+            <div class="trade-export-links" data-trade-export-links hidden>
+                <a href="#" data-trade-export-png download>Download PNG</a>
+                <a href="#" data-trade-export-txt download>Download TXT</a>
+            </div>
+
+            <div class="chart-frame" data-trade-chart-frame hidden>
+                <img data-trade-chart-image alt="Individual trade chart with entry and exit markers">
+            </div>
+            <div class="results-block" data-trade-summary hidden></div>
+        </div>
+
+        <script>
+        (function () {
+            var root = document.querySelector('[data-trade-viewer]');
+            if (!root) {
+                return;
+            }
+
+            var runId = root.getAttribute('data-run-id');
+            var selectNode = root.querySelector('[data-trade-select]');
+            var filterNode = root.querySelector('[data-trade-filter]');
+            var renderBtn = root.querySelector('[data-trade-render]');
+            var exportBtn = root.querySelector('[data-trade-export]');
+            var warningNode = root.querySelector('[data-trade-warning]');
+            var confirmBtn = root.querySelector('[data-trade-confirm]');
+            var prevTradeBtn = root.querySelector('[data-trade-prev]');
+            var nextTradeBtn = root.querySelector('[data-trade-next]');
+            var emptyFilterNode = root.querySelector('[data-trade-filter-empty]');
+            var chartFrame = root.querySelector('[data-trade-chart-frame]');
+            var chartImage = root.querySelector('[data-trade-chart-image]');
+            var summaryNode = root.querySelector('[data-trade-summary]');
+            var exportLinksNode = root.querySelector('[data-trade-export-links]');
+            var exportPngLink = root.querySelector('[data-trade-export-png]');
+            var exportTxtLink = root.querySelector('[data-trade-export-txt]');
+            var indicatorToggleNodes = Array.prototype.slice.call(root.querySelectorAll('[data-indicator-toggle]'));
+            var pendingTradeNumber = null;
+            var pendingExportPacket = false;
+            var storageKey = runId ? 'tradeViewer:lastSelected:' + runId : '';
+            var allTradeOptions = {{ trade_selector_options | tojson }};
+
+            var getSelectedIndicators = function () {
+                var selected = [];
+                for (var i = 0; i < indicatorToggleNodes.length; i += 1) {
+                    if (indicatorToggleNodes[i].checked) {
+                        selected.push(String(indicatorToggleNodes[i].value || ''));
+                    }
+                }
+                return selected;
+            };
+
+            var getStoredTradeNumber = function () {
+                if (!storageKey) {
+                    return '';
+                }
+                try {
+                    return String(localStorage.getItem(storageKey) || '');
+                } catch (error) {
+                    return '';
+                }
+            };
+
+            var persistSelectedTradeNumber = function () {
+                if (!storageKey || !selectNode || !selectNode.value) {
+                    return;
+                }
+                try {
+                    localStorage.setItem(storageKey, String(selectNode.value));
+                } catch (error) {
+                    // localStorage may be unavailable in some browser contexts.
+                }
+            };
+
+            var getTradeValues = function () {
+                if (!selectNode) {
+                    return [];
+                }
+                var values = [];
+                for (var i = 0; i < selectNode.options.length; i += 1) {
+                    values.push(String(selectNode.options[i].value));
+                }
+                return values;
+            };
+
+            var setViewerControlsEnabled = function (enabled) {
+                if (selectNode) {
+                    selectNode.disabled = !enabled;
+                }
+                if (renderBtn) {
+                    renderBtn.disabled = !enabled;
+                }
+                if (exportBtn) {
+                    exportBtn.disabled = !enabled;
+                }
+                if (prevTradeBtn) {
+                    prevTradeBtn.disabled = !enabled;
+                }
+                if (nextTradeBtn) {
+                    nextTradeBtn.disabled = !enabled;
+                }
+            };
+
+            var getActiveFilter = function () {
+                if (!filterNode || !filterNode.value) {
+                    return 'ALL';
+                }
+                return String(filterNode.value).toUpperCase();
+            };
+
+            var getFilteredTradeOptions = function () {
+                var filterValue = getActiveFilter();
+                if (filterValue === 'ALL') {
+                    return allTradeOptions.slice();
+                }
+
+                return allTradeOptions.filter(function (option) {
+                    var side = String(option.side || '').toUpperCase();
+                    var netPnl = Number(option.net_pnl || 0);
+                    if (filterValue === 'LONG') {
+                        return side === 'LONG';
+                    }
+                    if (filterValue === 'SHORT') {
+                        return side === 'SHORT';
+                    }
+                    if (filterValue === 'WINNING') {
+                        return netPnl > 0;
+                    }
+                    if (filterValue === 'LOSING') {
+                        return netPnl < 0;
+                    }
+                    return true;
+                });
+            };
+
+            var rebuildTradeSelector = function (options, preferredTradeNumber) {
+                if (!selectNode) {
+                    return '';
+                }
+
+                selectNode.innerHTML = '';
+                var preferred = String(preferredTradeNumber || '');
+                var selected = '';
+
+                for (var i = 0; i < options.length; i += 1) {
+                    var item = options[i];
+                    var optionNode = document.createElement('option');
+                    optionNode.value = String(item.trade_number);
+                    optionNode.textContent = String(item.label || ('Trade #' + String(item.trade_number)));
+                    selectNode.appendChild(optionNode);
+
+                    if (!selected && preferred && optionNode.value === preferred) {
+                        selected = optionNode.value;
+                    }
+                }
+
+                if (!selected && selectNode.options.length) {
+                    selected = String(selectNode.options[0].value);
+                }
+
+                if (selected) {
+                    selectNode.value = selected;
+                }
+                return selected;
+            };
+
+            var updateTradeNavButtons = function () {
+                if (!selectNode) {
+                    return;
+                }
+                var values = getTradeValues();
+                var idx = values.indexOf(String(selectNode.value));
+                if (prevTradeBtn) {
+                    prevTradeBtn.disabled = !values.length || idx <= 0;
+                }
+                if (nextTradeBtn) {
+                    nextTradeBtn.disabled = !values.length || idx < 0 || idx >= values.length - 1;
+                }
+            };
+
+            var applyFilter = function (preferredTradeNumber, refreshChart) {
+                var filteredOptions = getFilteredTradeOptions();
+                var selectedTrade = rebuildTradeSelector(filteredOptions, preferredTradeNumber);
+                var hasTrades = Boolean(selectedTrade);
+
+                if (emptyFilterNode) {
+                    emptyFilterNode.hidden = hasTrades;
+                }
+
+                if (!hasTrades) {
+                    setViewerControlsEnabled(false);
+                    hideWarning();
+                    clearExportLinks();
+                    chartFrame.hidden = true;
+                    summaryNode.hidden = true;
+                    return;
+                }
+
+                setViewerControlsEnabled(true);
+                persistSelectedTradeNumber();
+                updateTradeNavButtons();
+
+                if (refreshChart) {
+                    requestTradeChart(selectedTrade, false, false);
+                }
+            };
+
+            var goToPreviousTrade = function () {
+                if (!selectNode) {
+                    return;
+                }
+                var values = getTradeValues();
+                var idx = values.indexOf(String(selectNode.value));
+                if (idx > 0) {
+                    selectNode.value = values[idx - 1];
+                    persistSelectedTradeNumber();
+                    updateTradeNavButtons();
+                    requestTradeChart(selectNode.value, false, false);
+                }
+            };
+
+            var goToNextTrade = function () {
+                if (!selectNode) {
+                    return;
+                }
+                var values = getTradeValues();
+                var idx = values.indexOf(String(selectNode.value));
+                if (idx >= 0 && idx < values.length - 1) {
+                    selectNode.value = values[idx + 1];
+                    persistSelectedTradeNumber();
+                    updateTradeNavButtons();
+                    requestTradeChart(selectNode.value, false, false);
+                }
+            };
+
+            var refreshSelectedTrade = function () {
+                var tradeNumber = selectNode ? selectNode.value : '';
+                if (!tradeNumber) {
+                    return;
+                }
+                requestTradeChart(tradeNumber, false, false);
+            };
+
+            var clearExportLinks = function () {
+                if (!exportLinksNode) {
+                    return;
+                }
+                exportLinksNode.hidden = true;
+                if (exportPngLink) {
+                    exportPngLink.removeAttribute('href');
+                }
+                if (exportTxtLink) {
+                    exportTxtLink.removeAttribute('href');
+                }
+            };
+
+            var showExportLinks = function (packet) {
+                if (!exportLinksNode || !packet || !packet.png_path || !packet.txt_path) {
+                    return;
+                }
+                var staticBase = '{{ url_for("static", filename="") }}';
+                var cacheSuffix = '?t=' + Date.now();
+                if (exportPngLink) {
+                    exportPngLink.href = staticBase + packet.png_path + cacheSuffix;
+                }
+                if (exportTxtLink) {
+                    exportTxtLink.href = staticBase + packet.txt_path + cacheSuffix;
+                }
+                exportLinksNode.hidden = false;
+            };
+
+            var exportSelectedTrade = function () {
+                var tradeNumber = selectNode ? selectNode.value : '';
+                if (!tradeNumber) {
+                    return;
+                }
+                requestTradeChart(tradeNumber, false, true);
+            };
+
+            var renderSummary = function (data) {
+                var trade = data.trade || {};
+                var html = [];
+                html.push('<strong>Trade #' + String(trade.trade_number || '') + '</strong>');
+                html.push('Side: ' + String(trade.side || 'n/a'));
+                html.push('Entry: ' + String(trade.entry_time || 'n/a') + ' @ ' + String(trade.entry_price || 'n/a'));
+                html.push('Exit: ' + String(trade.exit_time || 'n/a') + ' @ ' + String(trade.exit_price || 'n/a'));
+                html.push('Net PnL: ' + String(trade.net_pnl || 0));
+                html.push('Entry condition: ' + String(trade.entry_trigger || 'n/a'));
+                html.push('Exit condition: ' + String(trade.exit_trigger || 'n/a'));
+                if (data.conditions_note) {
+                    html.push('Note: ' + String(data.conditions_note));
+                }
+                summaryNode.innerHTML = '<pre>' + html.join('\n') + '</pre>';
+                summaryNode.hidden = false;
+            };
+
+            var hideWarning = function () {
+                warningNode.hidden = true;
+                confirmBtn.hidden = true;
+                pendingTradeNumber = null;
+                pendingExportPacket = false;
+            };
+
+            var requestTradeChart = function (tradeNumber, forceGenerate, exportPacket) {
+                if (!tradeNumber) {
+                    return;
+                }
+                renderBtn.disabled = true;
+                if (exportBtn) {
+                    exportBtn.disabled = true;
+                }
+                if (prevTradeBtn) {
+                    prevTradeBtn.disabled = true;
+                }
+                if (nextTradeBtn) {
+                    nextTradeBtn.disabled = true;
+                }
+                fetch('/results/' + encodeURIComponent(runId) + '/trade-viewer-chart', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        trade_number: Number(tradeNumber),
+                        force_generate: Boolean(forceGenerate),
+                        export_packet: Boolean(exportPacket),
+                        selected_indicators: getSelectedIndicators()
+                    })
+                })
+                .then(function (resp) { return resp.json(); })
+                .then(function (data) {
+                    renderBtn.disabled = false;
+                    if (exportBtn) {
+                        exportBtn.disabled = false;
+                    }
+                    updateTradeNavButtons();
+
+                    if (!data.ok) {
+                        warningNode.textContent = data.error || 'Trade graph generation failed.';
+                        warningNode.hidden = false;
+                        confirmBtn.hidden = true;
+                        return;
+                    }
+
+                    if (data.warning_required) {
+                        pendingTradeNumber = tradeNumber;
+                        pendingExportPacket = Boolean(exportPacket);
+                        clearExportLinks();
+                        warningNode.textContent = data.message || 'This trade requires more than 50 candles.';
+                        warningNode.hidden = false;
+                        confirmBtn.hidden = false;
+                        chartFrame.hidden = true;
+                        summaryNode.hidden = true;
+                        return;
+                    }
+
+                    hideWarning();
+
+                    if (data.chart_path) {
+                        chartImage.src = '{{ url_for("static", filename="") }}' + data.chart_path + '?t=' + Date.now();
+                        chartFrame.hidden = false;
+                    }
+
+                    renderSummary(data);
+
+                    if (exportPacket && data.packet) {
+                        showExportLinks(data.packet);
+                    } else if (!exportPacket) {
+                        clearExportLinks();
+                    }
+                })
+                .catch(function () {
+                    renderBtn.disabled = false;
+                    if (exportBtn) {
+                        exportBtn.disabled = false;
+                    }
+                    updateTradeNavButtons();
+                    warningNode.textContent = 'Network error while generating trade graph.';
+                    warningNode.hidden = false;
+                    confirmBtn.hidden = true;
+                });
+            };
+
+            renderBtn.addEventListener('click', function () {
+                refreshSelectedTrade();
+            });
+
+            if (exportBtn) {
+                exportBtn.addEventListener('click', function () {
+                    exportSelectedTrade();
+                });
+            }
+
+            if (prevTradeBtn) {
+                prevTradeBtn.addEventListener('click', function () {
+                    goToPreviousTrade();
+                });
+            }
+
+            if (nextTradeBtn) {
+                nextTradeBtn.addEventListener('click', function () {
+                    goToNextTrade();
+                });
+            }
+
+            if (selectNode) {
+                selectNode.addEventListener('change', function () {
+                    persistSelectedTradeNumber();
+                    updateTradeNavButtons();
+                });
+            }
+
+            if (filterNode) {
+                filterNode.addEventListener('change', function () {
+                    var currentTrade = selectNode ? selectNode.value : '';
+                    applyFilter(currentTrade, true);
+                });
+            }
+
+            confirmBtn.addEventListener('click', function () {
+                if (!pendingTradeNumber) {
+                    return;
+                }
+                requestTradeChart(pendingTradeNumber, true, pendingExportPacket);
+            });
+
+            document.addEventListener('keydown', function (event) {
+                var activeTag = (document.activeElement && document.activeElement.tagName || '').toUpperCase();
+                var isEditable = activeTag === 'INPUT' || activeTag === 'TEXTAREA';
+                if (isEditable) {
+                    return;
+                }
+
+                if (event.key === '[') {
+                    event.preventDefault();
+                    goToPreviousTrade();
+                    return;
+                }
+                if (event.key === ']') {
+                    event.preventDefault();
+                    goToNextTrade();
+                    return;
+                }
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    if (!confirmBtn.hidden && pendingTradeNumber) {
+                        requestTradeChart(pendingTradeNumber, true, pendingExportPacket);
+                    } else {
+                        refreshSelectedTrade();
+                    }
+                }
+            });
+
+            var storedTradeNumber = getStoredTradeNumber();
+            var preferredTradeNumber = storedTradeNumber;
+            if (!preferredTradeNumber && allTradeOptions.length) {
+                preferredTradeNumber = String(allTradeOptions[0].trade_number);
+            }
+
+            applyFilter(preferredTradeNumber, false);
+            if (selectNode && selectNode.value) {
+                refreshSelectedTrade();
+            }
+        })();
+        </script>
+        {% else %}
+        <div class="report-muted">{{ trade_selector_error or "No trades available for individual viewer." }}</div>
         {% endif %}
     </div>
 </section>

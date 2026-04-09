@@ -14,7 +14,6 @@
         <th>Link</th>
     </tr>
 
-    {% for r in runs %}
 {% for run in runs %}
 <tr>
   <td>{{ run.run_id }}</td>
@@ -27,9 +26,13 @@
     <a href="{{ url_for('results', run_id=run.run_id) }}">
       View Results
     </a>
+    |
+    <a href="{{ url_for('index') }}?load_run={{ run.run_id }}">
+      Reuse Params
+    </a>
   </td>
 </tr>
-{% endfor %}    {% endfor %}
+{% endfor %}
 </table>
 
 {% endblock %}

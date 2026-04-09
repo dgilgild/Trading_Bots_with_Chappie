@@ -4,6 +4,19 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Trading Bot Dashboard</title>
+    <script>
+        (function () {
+            var key = "tb-theme";
+            try {
+                var savedTheme = localStorage.getItem(key);
+                if (savedTheme === "dark") {
+                    document.documentElement.setAttribute("data-theme", "dark");
+                }
+            } catch (error) {
+                // Ignore storage errors and keep light theme default.
+            }
+        })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
@@ -19,10 +32,15 @@
                 <div class="brand-subtitle">Research & backtest console</div>
             </div>
         </div>
-        <nav class="app-nav">
-            <a class="nav-link" href="/">Run Backtest</a>
-            <a class="nav-link" href="/history">History</a>
-        </nav>
+        <div class="app-actions">
+            <nav class="app-nav">
+                <a class="nav-link" href="/">Run Backtest</a>
+                <a class="nav-link" href="/history">History</a>
+            </nav>
+            <button type="button" class="theme-toggle" data-theme-toggle aria-pressed="false">
+                Night mode
+            </button>
+        </div>
     </header>
 
     <main class="app-shell">
@@ -32,5 +50,45 @@
     <footer class="app-footer">
         <span>Backtests run locally. Data stored in SQLite.</span>
     </footer>
+
+    <script>
+        (function () {
+            var key = "tb-theme";
+            var toggle = document.querySelector("[data-theme-toggle]");
+            if (!toggle) {
+                return;
+            }
+
+            var setTheme = function (theme) {
+                var isDark = theme === "dark";
+                if (isDark) {
+                    document.documentElement.setAttribute("data-theme", "dark");
+                } else {
+                    document.documentElement.removeAttribute("data-theme");
+                }
+
+                toggle.setAttribute("aria-pressed", String(isDark));
+                toggle.textContent = isDark ? "Light mode" : "Night mode";
+
+                try {
+                    if (isDark) {
+                        localStorage.setItem(key, "dark");
+                    } else {
+                        localStorage.removeItem(key);
+                    }
+                } catch (error) {
+                    // Ignore storage errors and keep in-memory theme.
+                }
+            };
+
+            var initialTheme = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+            setTheme(initialTheme);
+
+            toggle.addEventListener("click", function () {
+                var nextTheme = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+                setTheme(nextTheme);
+            });
+        })();
+    </script>
 </body>
 </html>

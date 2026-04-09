@@ -171,6 +171,163 @@ Epic E - Trade Explainability (Phase 2)
   - Report generated automatically by explainability script.
   - Includes strategies covered, generated trade count, fallback/full counts, and missing-artifact warnings.
 
+Epic F - Trade Viewer UX Enhancements
+
+[ST-406] Persist last selected trade per run in UI
+- Priority: Medium
+- Estimate: S
+- Deliverables:
+  - Store/recover selected trade number per run_id in browser localStorage.
+- Acceptance criteria:
+  - Key pattern uses run-scoped storage (tradeViewer:lastSelected:<run_id>).
+  - On load, stored trade is restored when still available for the run.
+  - Selector changes and prev/next navigation update stored value.
+
+[ST-407] Add trade filter controls (LONG/SHORT/winning/losing)
+- Priority: Medium
+- Estimate: M
+- Deliverables:
+  - Trade filter controls in Individual Trade Viewer.
+  - Filtered selector list and safe fallback selection behavior.
+- Acceptance criteria:
+  - Users can filter trade list by side and outcome.
+  - Prev/next navigation and keyboard shortcuts operate on filtered list.
+  - Empty-filter state shows clear user message.
+
+[ST-408] Add indicator toggle panel for overlays
+- Priority: Medium
+- Estimate: M
+- Deliverables:
+  - Indicator toggle panel in trade viewer to show/hide chart overlays.
+- Acceptance criteria:
+  - Overlay visibility can be changed without leaving results page.
+  - Toggle state is reflected in regenerated trade chart output.
+
+[ST-409] Export single-trade packet from UI (png + txt)
+- Priority: Low
+- Estimate: M
+- Deliverables:
+  - Single action to export selected trade chart image and explanation text.
+- Acceptance criteria:
+  - Export action downloads both png and txt artifacts for selected trade.
+  - Export works for default and warning-confirm generation paths.
+
+Epic G - Live Trading Platform Foundation
+
+Mapping note (to align with simplified roadmap)
+- Simplified roadmap reference:
+  - ST-500 Live Trading foundation
+  - ST-501 Live DB schema
+  - ST-502 Live runtime engine
+  - ST-503 Binance execution service
+  - ST-504 Risk + kill-switch
+  - ST-505 /live UI
+  - ST-506 paper-trading verification suite
+- This backlog keeps additional operational tasks (systemd/security/runbook), and adds explicit stories below
+  for Binance execution service and /live UI so the mapping is unambiguous.
+
+[ST-500] Define control plane vs execution plane interfaces
+- Priority: High
+- Estimate: S
+- Deliverables:
+  - docs/live_trading_blueprint.txt interface and boundary section finalized.
+- Acceptance criteria:
+  - Explicit ownership documented for UI, worker, and shared data contracts.
+  - No direct order placement path remains in control-plane route definitions.
+
+[ST-501] Add live worker service skeleton and bootstrap contract
+- Priority: High
+- Estimate: M
+- Deliverables:
+  - src/live/ module skeleton and runner bootstrap entrypoint contract.
+- Acceptance criteria:
+  - Worker startup path is documented and callable as a standalone process.
+  - Loop lifecycle states are defined (starting, healthy, degraded, stopped).
+
+[ST-502] Introduce live state persistence schema
+- Priority: High
+- Estimate: M
+- Deliverables:
+  - DB schema plan for live_sessions, live_orders, live_positions, live_heartbeats.
+- Acceptance criteria:
+  - Required fields and indexes are defined.
+  - Recovery requirements after restart are covered.
+
+[ST-503] Implement systemd deployment assets
+- Priority: High
+- Estimate: M
+- Deliverables:
+  - systemd unit templates for trading-bot-web and trading-bot-live-worker.
+- Acceptance criteria:
+  - Units support restart behavior, least privilege, and writable-path restrictions.
+  - Startup dependency order is documented and validated on VPS.
+
+[ST-504] Add heartbeat and health visibility path
+- Priority: High
+- Estimate: M
+- Deliverables:
+  - Worker heartbeat write contract and control-plane health readout.
+- Acceptance criteria:
+  - Missing heartbeat threshold is configurable.
+  - Operator can see worker freshness and last known state from UI.
+
+[ST-505] Enforce live risk guardrails and kill-switch
+- Priority: High
+- Estimate: M
+- Deliverables:
+  - Risk policy contract for max position size, max concurrent exposure, max daily loss.
+  - Emergency kill-switch behavior specification.
+- Acceptance criteria:
+  - Pre-order risk validation is mandatory.
+  - Kill-switch blocks new entries immediately and logs reason.
+
+[ST-506] Harden secrets and host security baseline
+- Priority: High
+- Estimate: S
+- Deliverables:
+  - VPS hardening checklist and env/secrets handling policy.
+- Acceptance criteria:
+  - Live API keys are only loaded from protected host env files.
+  - Runtime user is non-root and permissions are least privilege.
+
+[ST-507] Create deployment and rollback runbook
+- Priority: Medium
+- Estimate: S
+- Deliverables:
+  - Step-by-step VPS deploy, rollback, and incident quick response playbook.
+- Acceptance criteria:
+  - Operator can execute deploy and rollback without ad-hoc decisions.
+  - Incident triage flow includes containment and evidence capture steps.
+
+[ST-508] Execute paper-trading soak validation
+- Priority: Medium
+- Estimate: M
+- Deliverables:
+  - 24h paper-trading soak checklist and acceptance report template.
+- Acceptance criteria:
+  - No unhandled worker crashes over soak window.
+  - Heartbeat, restart recovery, and basic order lifecycle are verified.
+
+[ST-509] Implement Binance execution service adapter
+- Priority: High
+- Estimate: M
+- Deliverables:
+  - Exchange execution module with create/cancel/fetch order flows.
+  - Precision/min-notional validation and idempotent client order ids.
+- Acceptance criteria:
+  - Worker can place and reconcile test/paper orders through a dedicated adapter.
+  - Duplicate order protection is enforced by idempotency contract.
+
+[ST-510] Implement /live control page and API routes
+- Priority: High
+- Estimate: M
+- Deliverables:
+  - /live page for bot control and status visibility.
+  - API endpoints for start/stop/arm/disarm and runtime status.
+- Acceptance criteria:
+  - Operator can configure and control a live worker from UI.
+  - Page clearly separates dry-run/paper/live states and risk status.
+
 Suggested day-by-day plan
 
 Day 1-2
@@ -193,6 +350,12 @@ Day 9-10
 
 Phase 2 follow-up
 - ST-403, ST-404, ST-405
+
+Phase 3 follow-up
+- ST-406, ST-407, ST-408, ST-409
+
+Phase 4 follow-up
+- ST-500, ST-501, ST-502, ST-503, ST-504, ST-505, ST-506, ST-507, ST-508
 
 Risks and mitigations
 - Risk: brittle regression values after intentional logic changes.

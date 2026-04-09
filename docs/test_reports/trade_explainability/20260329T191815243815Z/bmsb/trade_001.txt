@@ -1,0 +1,29 @@
+trade_number: 1
+side: LONG
+entry_time: 2021-02-06 00:00:00+00:00
+exit_time: 2021-02-24 00:00:00+00:00
+entry_price: 100.682043
+exit_price: 102.628173
+net_pnl: 17.310141
+entry_trigger: BMSB long
+exit_trigger: BMSB crossunder
+mode: deterministic_full
+strategy_explainability: bmsb
+entry_indicator_values:
+- close: 100.581461
+- bmsb: 100.158307
+- bmsb_sma: 99.906342
+- bmsb_ema: 100.158307
+- tensignal: 1.000000
+entry_conditions:
+- buysignal(close>bmsb): MET
+- tensignal_ge_1: MET
+exit_indicator_values:
+- close: 102.730904
+- bmsb: 102.762272
+- bmsb_sma: 102.762272
+- bmsb_ema: 102.682246
+- tensignal: 1.000000
+exit_conditions:
+- prev_close_ge_prev_bmsb: MET
+- close_lt_bmsb: MET

@@ -13,6 +13,34 @@ from src.visualization.plot_trades import plot_trades_by_date
 from src.core.plotting.plot_trades import plot_trades
 
 
+REQUIRED_OHLC_COLUMNS = ("timestamp", "open", "high", "low", "close")
+
+
+def _validate_and_prepare_ohlc(df):
+    if df is None or df.empty:
+        return None, "No OHLCV data found for the selected filters."
+
+    missing = [col for col in REQUIRED_OHLC_COLUMNS if col not in df.columns]
+    if missing:
+        missing_txt = ", ".join(sorted(missing))
+        return None, f"OHLCV data is missing required column(s): {missing_txt}."
+
+    prepared = df.copy()
+    prepared["timestamp"] = pd.to_datetime(prepared["timestamp"], errors="coerce")
+
+    numeric_cols = ["open", "high", "low", "close", "volume"]
+    for col in numeric_cols:
+        if col in prepared.columns:
+            prepared[col] = pd.to_numeric(prepared[col], errors="coerce")
+
+    prepared = prepared.dropna(subset=["timestamp", "high", "low", "close"])
+    prepared = prepared.sort_values("timestamp").reset_index(drop=True)
+    if prepared.empty:
+        return None, "OHLCV rows are present but invalid after timestamp/price validation."
+
+    return prepared, None
+
+
 def export_trades_csv(trades, output_dir, run_id, metadata, prefix="ema_cross_v2"):
     if not trades:
         print("[WARN] No trades to export")
@@ -150,6 +178,15 @@ def run_backtest_ema_cross_v2(
         use_clean=use_clean,
     )
 
+    df, data_error = _validate_and_prepare_ohlc(df)
+    if data_error:
+        print(f"[WARN] EMA Cross V2 skipped: {data_error}")
+        return {
+            "Status": "No data",
+            "Total trades": 0,
+            "No Data Reason": data_error,
+        }, None, None
+
     df["ema_fast"] = df["close"].ewm(span=ema_fast, adjust=False).mean()
     df["ema_slow"] = df["close"].ewm(span=ema_slow, adjust=False).mean()
 
@@ -241,7 +278,7 @@ def run_backtest_ema_cross_v2(
         equity_dates.append(t["exit_time"])
 
     DB_equity_path = None
-    if generate_equity:
+    if generate_equity and bt.trades:
         equity_filename = f"equity_curve_{run_id}.png"
         equity_path = os.path.join(output_dir, equity_filename)
 
@@ -259,6 +296,8 @@ def run_backtest_ema_cross_v2(
         plt.close()
 
         DB_equity_path = f"backtests/ema_cross/{run_id}/{equity_filename}"
+    elif generate_equity:
+        print("[INFO] No closed trades; skipping equity curve chart generation.")
 
     if generate_report:
         generate_quantstats_report(

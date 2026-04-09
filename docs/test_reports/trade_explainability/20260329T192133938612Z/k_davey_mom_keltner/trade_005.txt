@@ -1,0 +1,20 @@
+trade_number: 5
+side: LONG
+entry_time: 2021-12-22 00:00:00+00:00
+exit_time: 2022-01-09 00:00:00+00:00
+entry_price: 118.499426
+exit_price: 115.798072
+net_pnl: -14.678256
+entry_trigger: Momentum+Keltner long
+exit_trigger: Keltner stoch exit
+mode: fallback
+strategy_explainability: k_davey_mom_keltner
+note: strategy-specific deterministic condition reconstruction is not implemented
+entry_conditions:
+- entry_trigger_present: MET
+exit_conditions:
+- exit_trigger_present: MET
+entry_indicator_values_best_effort:
+- none_available
+exit_indicator_values_best_effort:
+- none_available

@@ -1,0 +1,43 @@
+{
+  "artifacts": [
+    {
+      "entry_price": 114.72308761357426,
+      "entry_time": "2021-09-25 00:00:00+00:00",
+      "entry_trigger": "EMA20 crossed ABOVE EMA50 + EMA200 filter",
+      "exit_price": 111.30433960268977,
+      "exit_time": "2021-10-13 00:00:00+00:00",
+      "exit_trigger": "stop_loss",
+      "explanation_file": "trade_001.txt",
+      "fallback_mode": false,
+      "image_file": "trade_001.png",
+      "net_pnl": -31.770200000000003,
+      "side": "LONG",
+      "trade_number": 1
+    },
+    {
+      "entry_price": 120.45921179172016,
+      "entry_time": "2022-01-16 00:00:00+00:00",
+      "entry_trigger": "EMA20 crossed ABOVE EMA50 + EMA200 filter",
+      "exit_price": 116.8695272803269,
+      "exit_time": "2022-02-04 00:00:00+00:00",
+      "exit_trigger": "stop_loss",
+      "explanation_file": "trade_002.txt",
+      "fallback_mode": false,
+      "image_file": "trade_002.png",
+      "net_pnl": -30.76085439195998,
+      "side": "LONG",
+      "trade_number": 2
+    }
+  ],
+  "context_bars": 30,
+  "deterministic_source_of_truth": "src.core.testing.synthetic_data.make_synthetic_ohlcv_v1",
+  "fallback_trades": 0,
+  "generated_trades": 2,
+  "high_contrast": true,
+  "max_trades": 10,
+  "requested_trades": 2,
+  "rows": 430,
+  "source_mode": "deterministic_backtest",
+  "strategy": "ema_cross",
+  "timeframe_label": "1d"
+}

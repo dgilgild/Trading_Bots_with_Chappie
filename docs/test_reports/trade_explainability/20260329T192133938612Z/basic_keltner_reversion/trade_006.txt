@@ -1,0 +1,20 @@
+trade_number: 6
+side: SHORT
+entry_time: 2021-04-26 00:00:00+00:00
+exit_time: 2021-04-30 00:00:00+00:00
+entry_price: 107.308433
+exit_price: 109.564056
+net_pnl: -21.228087
+entry_trigger: KC_SHORT
+exit_trigger: stop_loss
+mode: fallback
+strategy_explainability: basic_keltner_reversion
+note: strategy-specific deterministic condition reconstruction is not implemented
+entry_conditions:
+- entry_trigger_present: MET
+exit_conditions:
+- exit_trigger_present: MET
+entry_indicator_values_best_effort:
+- none_available
+exit_indicator_values_best_effort:
+- none_available

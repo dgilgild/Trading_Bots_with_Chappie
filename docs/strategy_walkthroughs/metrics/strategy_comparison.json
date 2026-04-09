@@ -1,0 +1,130 @@
+{
+  "baseline_source": "src.core.testing.synthetic_data.make_synthetic_ohlcv_v1(rows=430, freq='D')",
+  "metric_definitions": {
+    "drawdown_proxy": "Approximation from per-trade net PnL only: min(cumulative_net_pnl - running_peak)"
+  },
+  "ranking": [
+    {
+      "rank": 1,
+      "strategy": "bmsb",
+      "total_net_pnl": 242.295125,
+      "trades": 10,
+      "win_rate": 100.0
+    },
+    {
+      "rank": 2,
+      "strategy": "rsi_reversion",
+      "total_net_pnl": 57.056364,
+      "trades": 6,
+      "win_rate": 100.0
+    },
+    {
+      "rank": 3,
+      "strategy": "donchian_breakout",
+      "total_net_pnl": 0.0,
+      "trades": 0,
+      "win_rate": 0.0
+    },
+    {
+      "rank": 4,
+      "strategy": "emalyarovich_smas",
+      "total_net_pnl": -42.313773,
+      "trades": 6,
+      "win_rate": 0.0
+    },
+    {
+      "rank": 5,
+      "strategy": "ema_trend_hold",
+      "total_net_pnl": -45.390923,
+      "trades": 2,
+      "win_rate": 0.0
+    },
+    {
+      "rank": 6,
+      "strategy": "ema_cross",
+      "total_net_pnl": -62.531054,
+      "trades": 2,
+      "win_rate": 0.0
+    },
+    {
+      "rank": 7,
+      "strategy": "k_davey_mom_keltner",
+      "total_net_pnl": -66.65439,
+      "trades": 6,
+      "win_rate": 0.0
+    },
+    {
+      "rank": 8,
+      "strategy": "basic_keltner_reversion",
+      "total_net_pnl": -308.453923,
+      "trades": 24,
+      "win_rate": 0.0
+    }
+  ],
+  "strategies": {
+    "basic_keltner_reversion": {
+      "avg_bars_in_trade": 4.375,
+      "avg_pnl": -12.852247,
+      "drawdown_proxy": -291.576673,
+      "total_net_pnl": -308.453923,
+      "trades": 24,
+      "win_rate": 0.0
+    },
+    "bmsb": {
+      "avg_bars_in_trade": 19.5,
+      "avg_pnl": 24.229513,
+      "drawdown_proxy": 0.0,
+      "total_net_pnl": 242.295125,
+      "trades": 10,
+      "win_rate": 100.0
+    },
+    "donchian_breakout": {
+      "avg_bars_in_trade": 0.0,
+      "avg_pnl": 0.0,
+      "drawdown_proxy": 0.0,
+      "total_net_pnl": 0.0,
+      "trades": 0,
+      "win_rate": 0.0
+    },
+    "ema_cross": {
+      "avg_bars_in_trade": 18.5,
+      "avg_pnl": -31.265527,
+      "drawdown_proxy": -30.760854,
+      "total_net_pnl": -62.531054,
+      "trades": 2,
+      "win_rate": 0.0
+    },
+    "ema_trend_hold": {
+      "avg_bars_in_trade": 5.5,
+      "avg_pnl": -22.695462,
+      "drawdown_proxy": -22.431903,
+      "total_net_pnl": -45.390923,
+      "trades": 2,
+      "win_rate": 0.0
+    },
+    "emalyarovich_smas": {
+      "avg_bars_in_trade": 1.166667,
+      "avg_pnl": -7.052296,
+      "drawdown_proxy": -35.474703,
+      "total_net_pnl": -42.313773,
+      "trades": 6,
+      "win_rate": 0.0
+    },
+    "k_davey_mom_keltner": {
+      "avg_bars_in_trade": 16.833333,
+      "avg_pnl": -11.109065,
+      "drawdown_proxy": -56.962018,
+      "total_net_pnl": -66.65439,
+      "trades": 6,
+      "win_rate": 0.0
+    },
+    "rsi_reversion": {
+      "avg_bars_in_trade": 11.166667,
+      "avg_pnl": 9.509394,
+      "drawdown_proxy": 0.0,
+      "total_net_pnl": 57.056364,
+      "trades": 6,
+      "win_rate": 100.0
+    }
+  }
+}

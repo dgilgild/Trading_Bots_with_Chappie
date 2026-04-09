@@ -1,0 +1,56 @@
+{
+  "artifacts": [
+    {
+      "entry_price": 100.6820429027222,
+      "entry_time": "2021-02-06 00:00:00+00:00",
+      "entry_trigger": "BMSB long",
+      "exit_price": 102.62817348222453,
+      "exit_time": "2021-02-24 00:00:00+00:00",
+      "exit_trigger": "BMSB crossunder",
+      "explanation_file": "trade_001.txt",
+      "fallback_mode": false,
+      "image_file": "trade_001.png",
+      "net_pnl": 17.310141042740412,
+      "side": "LONG",
+      "trade_number": 1
+    },
+    {
+      "entry_price": 101.9011666838167,
+      "entry_time": "2021-03-14 00:00:00+00:00",
+      "entry_trigger": "BMSB long",
+      "exit_price": 105.4267913099232,
+      "exit_time": "2021-04-05 00:00:00+00:00",
+      "exit_trigger": "BMSB crossunder",
+      "explanation_file": "trade_002.txt",
+      "fallback_mode": false,
+      "image_file": "trade_002.png",
+      "net_pnl": 33.12755841092413,
+      "side": "LONG",
+      "trade_number": 2
+    },
+    {
+      "entry_price": 105.35374367245076,
+      "entry_time": "2021-04-21 00:00:00+00:00",
+      "entry_trigger": "BMSB long",
+      "exit_price": 107.78383526288243,
+      "exit_time": "2021-05-10 00:00:00+00:00",
+      "exit_trigger": "BMSB crossunder",
+      "explanation_file": "trade_003.txt",
+      "fallback_mode": false,
+      "image_file": "trade_003.png",
+      "net_pnl": 22.10431248528817,
+      "side": "LONG",
+      "trade_number": 3
+    }
+  ],
+  "context_bars": 10,
+  "deterministic_source_of_truth": "src.core.testing.synthetic_data.make_synthetic_ohlcv_v1",
+  "fallback_trades": 0,
+  "generated_trades": 3,
+  "max_trades": 3,
+  "requested_trades": 10,
+  "rows": 430,
+  "source_mode": "deterministic_backtest",
+  "strategy": "bmsb",
+  "timeframe_label": "4h"
+}

@@ -1,0 +1,29 @@
+trade_number: 2
+side: LONG
+entry_time: 2022-01-16 00:00:00+00:00
+exit_time: 2022-02-04 00:00:00+00:00
+entry_price: 120.459212
+exit_price: 116.869527
+net_pnl: -30.760854
+entry_trigger: EMA20 crossed ABOVE EMA50 + EMA200 filter
+exit_trigger: stop_loss
+mode: deterministic_full
+strategy_explainability: ema_cross
+entry_indicator_values:
+- entry_exec_ema_fast: 117.114775
+- entry_exec_ema_slow: 116.906713
+- entry_exec_ema_trend: 113.952445
+- entry_signal_ema_fast: 116.888272
+- entry_signal_ema_slow: 116.810394
+- entry_signal_ema_trend: 113.899037
+entry_conditions:
+- bullish_cross(prev<slow && last>slow): MET
+- bearish_cross(prev>slow && last<slow): NOT_MET
+- trend_filter_long(close>ema_trend): MET
+- trend_filter_short(close<ema_trend): NOT_MET
+exit_indicator_values:
+- exit_exec_ema_fast: 119.519751
+- exit_exec_ema_slow: 118.628957
+- exit_exec_ema_trend: 115.038524
+exit_conditions:
+- stop_loss_hit_vs_bar_extreme: MET
