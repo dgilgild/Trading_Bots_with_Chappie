@@ -22,3 +22,6 @@ web/static/backtests/
 # Secrets
 .env
 .env.*
+
+.chappie_backtesting/
+.venv/
