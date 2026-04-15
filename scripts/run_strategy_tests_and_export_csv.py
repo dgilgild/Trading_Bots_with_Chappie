@@ -1,7 +1,7 @@
 """Run strategy pytest suite and export CSV results in one command.
 
 Usage:
-    PYTHONPATH=. python3 scripts/run_strategy_tests_and_export_csv.py
+    PYTHONPATH=. python scripts/run_strategy_tests_and_export_csv.py
 """
 
 from __future__ import annotations

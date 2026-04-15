@@ -1,7 +1,7 @@
 """Compatibility wrapper for strategy self-tests.
 
 Run:
-    PYTHONPATH=. python3 scripts/test_strategies_selftest.py
+    PYTHONPATH=. python scripts/test_strategies_selftest.py
 """
 
 from __future__ import annotations
@@ -47,7 +47,7 @@ def main() -> int:
     if not _pytest_is_available():
         print("ERROR: pytest is not installed in this environment.", flush=True)
         print("Install dependencies: pip install -r requirements.txt", flush=True)
-        print("Then rerun: PYTHONPATH=. python3 scripts/test_strategies_selftest.py", flush=True)
+        print("Then rerun: PYTHONPATH=. python scripts/test_strategies_selftest.py", flush=True)
         return 2
 
     rc = run_pytest()
